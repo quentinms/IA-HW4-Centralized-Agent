@@ -2,15 +2,15 @@
 
 //the list of imports
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
+import java.util.ListIterator;
 
-import logist.Measures;
-import logist.behavior.AuctionBehavior;
-import logist.behavior.CentralizedBehavior;
 import logist.agent.Agent;
-import logist.simulation.Vehicle;
+import logist.behavior.CentralizedBehavior;
 import logist.plan.Plan;
+import logist.simulation.Vehicle;
 import logist.task.Task;
 import logist.task.TaskDistribution;
 import logist.task.TaskSet;
@@ -111,5 +111,85 @@ public class CentralizedAgent implements CentralizedBehavior {
 	
 	private List<Plan> localChoice(){
 		return null;
+	}
+	
+	/**
+	 *TODO verify that it is correct
+	 * http://i.imgur.com/xVyoSl.jpg
+	 * @return True if the constraints are fulfilled, false otherwise.
+	 */
+	private Boolean verifyConstraints(){
+		
+		Vehicle vk = null;
+		HashMap<Task, Task> nextTaskTask = null;
+		HashMap<Vehicle, Task> nextTaskVehicle = null;
+		HashMap<Task, Integer> time = null;
+		HashMap<Task, Vehicle> vehicleTaskMap = null;
+		
+		ListIterator<Task> taskIter = null;
+		
+		
+		//Constraint 1
+		for(int index = 0; index < nextTaskTask.size(); index++){
+			Task currentTask = nextTaskTask.get(index);
+			Task nextTask = nextTaskTask.get(index+1);
+			
+			if(currentTask.equals(nextTask)){
+				return false;
+			}
+			
+		}
+		
+		//Constraint 2
+		{
+			Task tj = nextTaskVehicle.get(vk);
+		
+			if(time.get(tj)!=1){
+				return false;
+			}
+		}
+		
+		//Constraint 3
+		for(Task ti: nextTaskTask.keySet()){
+			Task tj = nextTaskTask.get(ti);
+			
+			if(time.get(tj) != time.get(ti)+1){
+				return false;
+			}
+			
+		}
+		
+		//Constraint 4
+		{
+			Task tj = nextTaskVehicle.get(vk);
+			if(!vk.equals(vehicleTaskMap.get(tj))){
+				return false;
+			}
+		}
+		
+		//Constraint 5
+		for(Task ti: nextTaskTask.keySet()){
+			Task tj = nextTaskTask.get(ti);
+			
+			if(!vehicleTaskMap.get(tj).equals(vehicleTaskMap.get(ti))){
+				return false;
+			}
+		}
+		
+		//Constraint 6
+		//WTF
+		
+		//Constraint 7
+		Task ti = null;
+		int carriedWeight = 0;
+		for (Task t: vk.getCurrentTasks()){
+			carriedWeight += t.weight;
+		}
+		if(ti.weight + carriedWeight > vk.capacity()){
+			return false;
+		}
+		
+		
+		return true;
 	}
 }

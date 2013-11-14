@@ -105,8 +105,27 @@ public class CentralizedAgent implements CentralizedBehavior {
 		return null;
 	}
 	
-	private Object chooseNeighbours(){
+	private Object chooseNeighbours(List<Plan> Aold, TaskSet tasks, List<Vehicle> vehicles) {
+		
+		Vehicle vi = vehicles.get((int) (Math.random() * vehicles.size()));
+		Vehicle vj = vehicles.get((int) (Math.random() * vehicles.size()));
+		
+		if (vi.equals(vj)) {
+			// Change the order of any pair of two tasks to be delivered
+			// random = (int) (Math.random() * vehicles.size());
+			// Task task = vi.getCurrentTasks().get(random);
+			// anotherRandom = (int) (Math.random() * vehicles.size());
+			// vi.tasks.get(random) = vi.tasks.get(anotherRandom);
+			// vi.tasks[anotherRandom] = task;
+		} else {
+			// Give the first task to be delivered by vi to vj
+			// task = nextTask(vi);
+			// vj.tasks.push(task);
+			// vi.remove(task);
+		}
+		
 		return null;
+		
 	}
 	
 	private List<Plan> localChoice(){

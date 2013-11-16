@@ -43,14 +43,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 		
 //		System.out.println("Agent " + agent.id() + " has tasks " + tasks);
 
-		Plan planVehicle1 = naivePlan(vehicles.get(0), tasks);
-
-		List<Plan> plans = new ArrayList<Plan>();
-		plans.add(planVehicle1);
-		while (plans.size() < vehicles.size())
-			plans.add(Plan.EMPTY);
-
-		return plans;
+		return centralizedPlan(vehicles, tasks);
 	}
 
 	private Plan naivePlan(Vehicle vehicle, TaskSet tasks) {
@@ -109,10 +102,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 			}
 		}
 		
-		
-		//TODO
-		
-		Solution initialSolution = new Solution();
+		Solution initialSolution = new Solution(tasks, vehicles);
 		
 		Task previousT = null;
 		int counter = 1;
@@ -141,7 +131,6 @@ public class CentralizedAgent implements CentralizedBehavior {
 	
 	
 	private List<Solution> chooseNeighbours(Solution Aold, TaskSet tasks, List<Vehicle> vehicles) {
-		
 		
 		List<Solution> N = new ArrayList<Solution>();
 		Vehicle vi = null;
@@ -295,12 +284,13 @@ class Solution{
 	static List<Vehicle> vehicles;
 	
 	
-	public Solution(){
+	public Solution(TaskSet tasks, List<Vehicle> vehicles){
 		nextTaskTask = new HashMap<Task, Task>();
 		nextTaskVehicle = new HashMap<Vehicle, Task>();
 		time = new HashMap<Task, Integer>();
 		vehicleTaskMap = new HashMap<Task, Vehicle>();
-		cost = computeCost();
+		this.tasks = tasks;
+		this.vehicles = vehicles;
 	}
 	
 	public Solution(Solution parentSolution){
@@ -313,7 +303,55 @@ class Solution{
 	
 	public List<Plan> getPlan() {
 		//TODO generate List of Plan for this solution
-		return null;
+		
+		List<Plan> plans = new ArrayList<Plan>();
+		
+		for(Vehicle v: vehicles){
+			
+			City current = v.homeCity();
+			Plan plan = new Plan(current);
+			
+			Task t = nextTaskVehicle.get(v);
+			
+			for (City city : current.pathTo(t.pickupCity))
+				plan.appendMove(city);
+
+			plan.appendPickup(t);
+
+			// move: pickup location => delivery location
+			for (City city : t.path())
+				plan.appendMove(city);
+
+			plan.appendDelivery(t);
+
+			// set current city
+			current = t.deliveryCity;
+			
+			while(t != null){
+				
+				t = nextTaskTask.get(t);
+				
+				for (City city : current.pathTo(t.pickupCity))
+					plan.appendMove(city);
+
+				plan.appendPickup(t);
+
+				// move: pickup location => delivery location
+				for (City city : t.path())
+					plan.appendMove(city);
+
+				plan.appendDelivery(t);
+
+				// set current city
+				current = t.deliveryCity;
+				
+			}
+			
+			plans.add(plan);
+			
+		}
+		
+		return plans;
 	}
 	
 
@@ -322,12 +360,16 @@ class Solution{
 		
 		for(Task ti: tasks){
 			Task nextT = nextTaskTask.get(ti);
-			cost += (ti.deliveryCity.distanceTo(nextT.pickupCity)+ nextT.pickupCity.distanceTo(nextT.deliveryCity)) * vehicleTaskMap.get(ti).costPerKm();
+			if(nextT != null){
+				cost += (ti.deliveryCity.distanceTo(nextT.pickupCity)+ nextT.pickupCity.distanceTo(nextT.deliveryCity)) * vehicleTaskMap.get(ti).costPerKm();
+			}
 		}
 		
 		for(Vehicle vi: vehicles){
 			Task nextT = nextTaskVehicle.get(vi);
-			cost += (vi.homeCity().distanceTo(nextT.pickupCity) + nextT.pickupCity.distanceTo(nextT.deliveryCity))* vi.costPerKm();
+			if(nextT != null){
+				cost += (vi.homeCity().distanceTo(nextT.pickupCity) + nextT.pickupCity.distanceTo(nextT.deliveryCity))* vi.costPerKm();
+			}
 		}
 		
 		return cost;

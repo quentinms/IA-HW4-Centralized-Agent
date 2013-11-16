@@ -77,21 +77,28 @@ public class CentralizedAgent implements CentralizedBehavior {
 	}
 	
 	private List<Plan> centralizedPlan(List<Vehicle> vehicles, TaskSet tasks){
-		List<Plan> A = selectInitialSolution(vehicles, tasks);
-		List<Plan> A_old = null;
-		Object N = null;
+		
+		Solution A = selectInitialSolution(vehicles, tasks);
+		Solution Aold = null;
+		List<Solution> N = null;
 		Boolean ok = true;
 		
-		while(ok){
-			A_old = new ArrayList<Plan>(A);
-			N = chooseNeighbours();
-			A = localChoice();
+		
+		int count = 0;
+		while(count < 100){
+			Aold = new Solution(A);
+			N = chooseNeighbours(Aold, tasks, vehicles);
+			//Should Aold be in N?
+			A = localChoice(N);
+			
+			count++;
 		}
 		
-		return A;
+		return A.getPlan();
+		
 	}
 	
-	private List<Plan> selectInitialSolution(List<Vehicle> vehicles, TaskSet tasks){
+	private Solution selectInitialSolution(List<Vehicle> vehicles, TaskSet tasks){
 		
 		Vehicle biggestVehicle = null;
 		int maxCapacity = 0;
@@ -102,35 +109,230 @@ public class CentralizedAgent implements CentralizedBehavior {
 			}
 		}
 		
-		return null;
-	}
-	
-	private Object chooseNeighbours(List<Plan> Aold, TaskSet tasks, List<Vehicle> vehicles) {
 		
-		Vehicle vi = vehicles.get((int) (Math.random() * vehicles.size()));
-		Vehicle vj = vehicles.get((int) (Math.random() * vehicles.size()));
+		//TODO
 		
-		if (vi.equals(vj)) {
-			// Change the order of any pair of two tasks to be delivered
-			// random = (int) (Math.random() * vehicles.size());
-			// Task task = vi.getCurrentTasks().get(random);
-			// anotherRandom = (int) (Math.random() * vehicles.size());
-			// vi.tasks.get(random) = vi.tasks.get(anotherRandom);
-			// vi.tasks[anotherRandom] = task;
-		} else {
-			// Give the first task to be delivered by vi to vj
-			// task = nextTask(vi);
-			// vj.tasks.push(task);
-			// vi.remove(task);
+		Solution initialSolution = new Solution();
+		
+		Task previousT = null;
+		int counter = 1;
+		
+		for(Task t: tasks){
+			
+			if(previousT == null){
+				initialSolution.nextTaskVehicle.put(biggestVehicle, t);
+			} else {
+				initialSolution.nextTaskTask.put(previousT, t);
+			}
+			
+			initialSolution.vehicleTaskMap.put(t, biggestVehicle);
+			initialSolution.time.put(t, counter);
+			
+			previousT = t;
+			counter++;
+			
+			
 		}
 		
-		return null;
+		initialSolution.cost = initialSolution.computeCost();
+		
+		return initialSolution;
+	}
+	
+	
+	private List<Solution> chooseNeighbours(Solution Aold, TaskSet tasks, List<Vehicle> vehicles) {
+		
+		
+		List<Solution> N = new ArrayList<Solution>();
+		Vehicle vi = null;
+		
+		while(vi == null || Aold.nextTaskVehicle.get(vi) == null){
+			vi = vehicles.get((int) (Math.random() * vehicles.size()));
+		}
+		
+		for(Vehicle vj: vehicles){
+			if(!vj.equals(vi)){
+				Task t = Aold.nextTaskVehicle.get(vi);
+				
+				//TODO gerer le poids
+				if(t.weight < vj.capacity()){
+					Solution A = changingVehicle(Aold, vi, vj);
+					N.add(A);
+				}
+			}
+		}
+		
+		//TODO waaat?
+		//Task t = vi
+		Task t = Aold.nextTaskVehicle.get(vi);
+		int length = 0;
+		
+		do{
+			t = Aold.nextTaskTask.get(t);
+			length++;
+		}while(t != null);
+		
+		
+		if(length >= 2){
+			for(int tIndex1 = 1; tIndex1 < length; tIndex1++){
+				for(int tIndex2 = tIndex1 +1; tIndex2 <= length; tIndex2++){
+					Solution A = changingTaskOrder(Aold, vi, tIndex1, tIndex2);
+					N.add(A);
+				}
+			}
+		}
+		
+		return N;
 		
 	}
 	
-	private List<Plan> localChoice(){
+	private Solution localChoice(List<Solution> N){
+		
+		Solution bestSolution = null;
+		double leastCost = Double.POSITIVE_INFINITY;
+		
+		for(Solution solution : N){
+			if(solution.cost < leastCost){
+				leastCost = solution.cost;
+				bestSolution = solution;
+			}
+		}
+		
+		return bestSolution;
+	}
+	
+	
+	
+	
+public Solution changingVehicle(Solution A, Vehicle v1, Vehicle v2){
+		Solution A1 = new Solution(A);
+		Task t = A.nextTaskVehicle.get(v1);
+		A1.nextTaskVehicle.put(v1, A1.nextTaskTask.get(t));
+		A1.nextTaskTask.put(t, A1.nextTaskVehicle.get(v2));
+		A1.nextTaskVehicle.put(v2, t);
+		
+		updateTime(A1, v1);
+		updateTime(A1, v2);
+		
+		A1.vehicleTaskMap.put(t, v2);	
+		return A1;
+	}
+
+//TODO waaat
+public Solution changingTaskOrder(Solution A, Vehicle vi, int taskIndex1, int taskIndex2){
+		Solution A1 = new Solution(A);
+	
+		//TODO wat?
+		//Task tPre1 = vi 
+		Task tPre1 = null;
+		
+		Task t1 = A1.nextTaskVehicle.get(vi);
+		
+		for(int count = 1; count < taskIndex1; count++ ){
+			t1 = A1.nextTaskTask.get(t1);
+		}
+		
+		Task tPost1 = A1.nextTaskTask.get(t1);
+		Task tPre2 = t1;
+		
+		Task t2 = A1.nextTaskTask.get(tPre2);
+		
+		for(int count = taskIndex1; count < taskIndex2; count++){
+			tPre2 = t2;
+			t2 = A1.nextTaskTask.get(t2);
+		}
+		
+		Task tPost2 = A1.nextTaskTask.get(t2);
+		
+		if(tPost1.equals(t2)){
+			A1.nextTaskTask.put(tPre1, t2);
+			A1.nextTaskTask.put(t2, t1);
+			A1.nextTaskTask.put(t1, tPost2);
+		} else {
+			
+			A1.nextTaskTask.put(tPre1, t2);
+			A1.nextTaskTask.put(tPre2, t1);
+			A1.nextTaskTask.put(t2, tPost1);
+			A1.nextTaskTask.put(t1, tPost2);
+		}
+		
+		updateTime(A1, vi);
+		
+		return A1;
+		
+}
+	
+public void updateTime(Solution A, Vehicle v){
+	Task ti = A.nextTaskVehicle.get(v);
+	
+	if(ti != null){
+		A.time.put(ti, 1);
+		Task tj = null;
+		do{
+			 tj = A.nextTaskTask.get(ti);
+			 if(tj!= null){
+				 A.time.put(tj, A.time.get(ti)+1);
+				 tj = ti;
+			 }
+			
+		}while(tj != null);
+	
+	}
+	
+}
+
+}
+
+class Solution{
+	
+	HashMap<Task, Task> nextTaskTask;
+	HashMap<Vehicle, Task> nextTaskVehicle;
+	HashMap<Task, Integer> time;
+	HashMap<Task, Vehicle> vehicleTaskMap;
+	Double cost;
+	
+	static TaskSet tasks;
+	static List<Vehicle> vehicles;
+	
+	
+	public Solution(){
+		nextTaskTask = new HashMap<Task, Task>();
+		nextTaskVehicle = new HashMap<Vehicle, Task>();
+		time = new HashMap<Task, Integer>();
+		vehicleTaskMap = new HashMap<Task, Vehicle>();
+		cost = computeCost();
+	}
+	
+	public Solution(Solution parentSolution){
+		nextTaskTask = new HashMap<Task, Task>(parentSolution.nextTaskTask);
+		nextTaskVehicle = new HashMap<Vehicle, Task>(parentSolution.nextTaskVehicle);
+		time = new HashMap<Task, Integer>(parentSolution.time);
+		vehicleTaskMap = new HashMap<Task, Vehicle>(parentSolution.vehicleTaskMap);
+		cost = computeCost();
+	}
+	
+	public List<Plan> getPlan() {
+		//TODO generate List of Plan for this solution
 		return null;
 	}
+	
+
+	double computeCost(){
+		double cost = 0.0;
+		
+		for(Task ti: tasks){
+			Task nextT = nextTaskTask.get(ti);
+			cost += (ti.deliveryCity.distanceTo(nextT.pickupCity)+ nextT.pickupCity.distanceTo(nextT.deliveryCity)) * vehicleTaskMap.get(ti).costPerKm();
+		}
+		
+		for(Vehicle vi: vehicles){
+			Task nextT = nextTaskVehicle.get(vi);
+			cost += (vi.homeCity().distanceTo(nextT.pickupCity) + nextT.pickupCity.distanceTo(nextT.deliveryCity))* vi.costPerKm();
+		}
+		
+		return cost;
+	}
+	
 	
 	/**
 	 *TODO verify that it is correct
@@ -138,77 +340,70 @@ public class CentralizedAgent implements CentralizedBehavior {
 	 * @return True if the constraints are fulfilled, false otherwise.
 	 */
 	private Boolean verifyConstraints(){
-		
-		Vehicle vk = null;
-		HashMap<Task, Task> nextTaskTask = null;
-		HashMap<Vehicle, Task> nextTaskVehicle = null;
-		HashMap<Task, Integer> time = null;
-		HashMap<Task, Vehicle> vehicleTaskMap = null;
-		
-		ListIterator<Task> taskIter = null;
-		
-		
-		//Constraint 1
-		for(int index = 0; index < nextTaskTask.size(); index++){
-			Task currentTask = nextTaskTask.get(index);
-			Task nextTask = nextTaskTask.get(index+1);
 			
-			if(currentTask.equals(nextTask)){
+			Vehicle vk = null;
+			
+			//Constraint 1
+			for(int index = 0; index < nextTaskTask.size(); index++){
+				Task currentTask = nextTaskTask.get(index);
+				Task nextTask = nextTaskTask.get(index+1);
+				
+				if(currentTask.equals(nextTask)){
+					return false;
+				}
+				
+			}
+			
+			//Constraint 2
+			{
+				Task tj = nextTaskVehicle.get(vk);
+			
+				if(time.get(tj)!=1){
+					return false;
+				}
+			}
+			
+			//Constraint 3
+			for(Task ti: nextTaskTask.keySet()){
+				Task tj = nextTaskTask.get(ti);
+				
+				if(time.get(tj) != time.get(ti)+1){
+					return false;
+				}
+				
+			}
+			
+			//Constraint 4
+			{
+				Task tj = nextTaskVehicle.get(vk);
+				if(!vk.equals(vehicleTaskMap.get(tj))){
+					return false;
+				}
+			}
+			
+			//Constraint 5
+			for(Task ti: nextTaskTask.keySet()){
+				Task tj = nextTaskTask.get(ti);
+				
+				if(!vehicleTaskMap.get(tj).equals(vehicleTaskMap.get(ti))){
+					return false;
+				}
+			}
+			
+			//Constraint 6
+			//WTF
+			
+			//Constraint 7
+			Task ti = null;
+			int carriedWeight = 0;
+			for (Task t: vk.getCurrentTasks()){
+				carriedWeight += t.weight;
+			}
+			if(ti.weight + carriedWeight > vk.capacity()){
 				return false;
 			}
 			
-		}
-		
-		//Constraint 2
-		{
-			Task tj = nextTaskVehicle.get(vk);
-		
-			if(time.get(tj)!=1){
-				return false;
-			}
-		}
-		
-		//Constraint 3
-		for(Task ti: nextTaskTask.keySet()){
-			Task tj = nextTaskTask.get(ti);
 			
-			if(time.get(tj) != time.get(ti)+1){
-				return false;
-			}
-			
+			return true;
 		}
-		
-		//Constraint 4
-		{
-			Task tj = nextTaskVehicle.get(vk);
-			if(!vk.equals(vehicleTaskMap.get(tj))){
-				return false;
-			}
-		}
-		
-		//Constraint 5
-		for(Task ti: nextTaskTask.keySet()){
-			Task tj = nextTaskTask.get(ti);
-			
-			if(!vehicleTaskMap.get(tj).equals(vehicleTaskMap.get(ti))){
-				return false;
-			}
-		}
-		
-		//Constraint 6
-		//WTF
-		
-		//Constraint 7
-		Task ti = null;
-		int carriedWeight = 0;
-		for (Task t: vk.getCurrentTasks()){
-			carriedWeight += t.weight;
-		}
-		if(ti.weight + carriedWeight > vk.capacity()){
-			return false;
-		}
-		
-		
-		return true;
-	}
 }

@@ -11,7 +11,7 @@
 	
 	<agent name="centralized-agent">
 		<set class-path="bin/"/>
-		<set class-name="template.CentralizedAgent"/>
+		<set class-name="CentralizedAgent"/>
 	</agent>
 	
 </agents>

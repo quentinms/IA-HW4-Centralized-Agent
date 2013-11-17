@@ -79,10 +79,14 @@ public class CentralizedAgent implements CentralizedBehavior {
 		
 		int count = 0;
 		while(count < 100){
+			System.out.println("Creating new solution");
 			Aold = new Solution(A);
+			System.out.println("Choosing neighbours");
 			N = chooseNeighbours(Aold, tasks, vehicles);
 			//Should Aold be in N?
+			System.out.println("Choosing the local best");
 			A = localChoice(N);
+			System.out.println("Next round");
 			
 			count++;
 		}
@@ -134,15 +138,17 @@ public class CentralizedAgent implements CentralizedBehavior {
 		
 		List<Solution> N = new ArrayList<Solution>();
 		Vehicle vi = null;
-		
+		System.out.println("141");
 		while(vi == null || Aold.nextTaskVehicle.get(vi) == null){
 			vi = vehicles.get((int) (Math.random() * vehicles.size()));
 		}
 		
+		System.out.println("146");
+		
 		for(Vehicle vj: vehicles){
 			if(!vj.equals(vi)){
 				Task t = Aold.nextTaskVehicle.get(vi);
-				
+				System.out.println(151);
 				//TODO gerer le poids
 				if(t.weight < vj.capacity()){
 					Solution A = changingVehicle(Aold, vi, vj);
@@ -150,6 +156,8 @@ public class CentralizedAgent implements CentralizedBehavior {
 				}
 			}
 		}
+		
+		System.out.println("160");
 		
 		//TODO waaat?
 		//Task t = vi
@@ -161,6 +169,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 			length++;
 		}while(t != null);
 		
+		System.out.println(172);
 		
 		if(length >= 2){
 			for(int tIndex1 = 1; tIndex1 < length; tIndex1++){
@@ -194,15 +203,17 @@ public class CentralizedAgent implements CentralizedBehavior {
 	
 	
 public Solution changingVehicle(Solution A, Vehicle v1, Vehicle v2){
+		System.out.println("A");
 		Solution A1 = new Solution(A);
 		Task t = A.nextTaskVehicle.get(v1);
+		System.out.println("B");
 		A1.nextTaskVehicle.put(v1, A1.nextTaskTask.get(t));
 		A1.nextTaskTask.put(t, A1.nextTaskVehicle.get(v2));
 		A1.nextTaskVehicle.put(v2, t);
-		
+		System.out.println("C");
 		updateTime(A1, v1);
 		updateTime(A1, v2);
-		
+		System.out.println("D");
 		A1.vehicleTaskMap.put(t, v2);	
 		return A1;
 	}
@@ -261,7 +272,7 @@ public void updateTime(Solution A, Vehicle v){
 			 tj = A.nextTaskTask.get(ti);
 			 if(tj!= null){
 				 A.time.put(tj, A.time.get(ti)+1);
-				 tj = ti;
+				 ti = tj;
 			 }
 			
 		}while(tj != null);

@@ -230,6 +230,8 @@ public class CentralizedAgent implements CentralizedBehavior {
 	}
 	
 	//TODO There's a bug causing a loop in the tasks.
+	//TODO There's a bug causing null to be in the hashmap
+	//TODO Reecrire la fonction completement parceque leur code c'est vraiment de la merde.
 	public Solution changingTaskOrder(Solution A, Vehicle vi, int taskIndex1, int taskIndex2) {
 		Solution A1 = new Solution(A, "changingTaskOrder");
 		System.out.println(230);
@@ -243,6 +245,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 			tPre1 = t1;
 			t1 = A1.nextTaskTask.get(t1);
 		}
+		System.out.println(tPre1);//TODO tPre1 should not be null, I guess
 		System.out.println(240);
 		Task tPost1 = A1.nextTaskTask.get(t1);
 		Task tPre2 = t1;
@@ -255,7 +258,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 		}
 		System.out.println(250);
 		Task tPost2 = A1.nextTaskTask.get(t2);
-
+		//TODO t2, tPre1, tPre2, etc. should not be null
 		if (tPost1.equals(t2)) {
 			A1.nextTaskTask.put(tPre1, t2);
 			A1.nextTaskTask.put(t2, t1);
@@ -415,24 +418,22 @@ class Solution {
 	 */
 	 Boolean verifyConstraints() {
 
-		Vehicle vk = null;
-
 		// Constraint 1
 		for (int index = 0; index < nextTaskTask.size(); index++) {
 			Task currentTask = nextTaskTask.get(index);
 			Task nextTask = nextTaskTask.get(index + 1);
 
-			if (currentTask.equals(nextTask)) {
+			if (currentTask != null && currentTask.equals(nextTask)) {
 				return false;
 			}
 
 		}
 
 		// Constraint 2
-		{
-			Task tj = nextTaskVehicle.get(vk);
+		for(Vehicle v: vehicles){
+			Task tj = nextTaskVehicle.get(v);
 
-			if (time.get(tj) != 1) {
+			if (tj!=null && time.get(tj) != 1) {
 				return false;
 			}
 		}
@@ -440,17 +441,17 @@ class Solution {
 		// Constraint 3
 		for (Task ti : nextTaskTask.keySet()) {
 			Task tj = nextTaskTask.get(ti);
-
-			if (time.get(tj) != time.get(ti) + 1) {
+			System.out.println(ti + " "+tj);
+			if (tj!=null && time.get(tj) != time.get(ti) + 1) {
 				return false;
 			}
 
 		}
 
 		// Constraint 4
-		{
-			Task tj = nextTaskVehicle.get(vk);
-			if (!vk.equals(vehicleTaskMap.get(tj))) {
+		for(Vehicle v: vehicles){
+			Task tj = nextTaskVehicle.get(v);
+			if (!v.equals(vehicleTaskMap.get(tj))) {
 				return false;
 			}
 		}
@@ -464,17 +465,19 @@ class Solution {
 			}
 		}
 
-		// Constraint 6
+		// TODO Constraint 6
 		// WTF
 
 		// Constraint 7
-		Task ti = null;
-		int carriedWeight = 0;
-		for (Task t : vk.getCurrentTasks()) {
-			carriedWeight += t.weight;
-		}
-		if (ti.weight + carriedWeight > vk.capacity()) {
-			return false;
+		for(Vehicle v: vehicles){
+			Task ti = null;
+			int carriedWeight = 0;
+			for (Task t : v.getCurrentTasks()) {
+				carriedWeight += t.weight;
+			}
+			if (ti.weight + carriedWeight > v.capacity()) {
+				return false;
+			}
 		}
 
 		return true;

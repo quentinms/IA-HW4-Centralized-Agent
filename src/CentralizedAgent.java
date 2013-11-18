@@ -81,7 +81,8 @@ public class CentralizedAgent implements CentralizedBehavior {
 		Boolean ok = true;
 
 		int count = 0;
-		while (count < 1000 && Aold.cost > A.cost) {
+		//TODO sometimes, A is null. Not sure if it should happen
+		while (count < 1000 && A!= null &&Aold.cost > A.cost) {
 			System.out.println("Creating new solution");
 			Aold = new Solution(A, "cloning");
 			System.out.println("Choosing neighbours");
@@ -98,7 +99,11 @@ public class CentralizedAgent implements CentralizedBehavior {
 		
 		System.out.println(count);
 
-		return A.getPlan();
+		if(A != null){
+			return A.getPlan();
+		} else {
+			return Aold.getPlan();
+		}
 
 	}
 
@@ -169,7 +174,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 		// TODO waaat?
 		// Task t = vi
-		Task t = Aold.nextTaskVehicle.get(vi);
+		/*Task t = Aold.nextTaskVehicle.get(vi);
 		int length = 0;
 
 		do {
@@ -188,6 +193,19 @@ public class CentralizedAgent implements CentralizedBehavior {
 					}
 				}
 			}
+		}*/
+		
+		Task tPre1 = null;
+		for(Task t1 = Aold.nextTaskVehicle.get(vi); t1 != null; t1 = Aold.nextTaskTask.get(t1)){
+			Task tPre2 = t1;
+			for(Task t2 = Aold.nextTaskTask.get(t1); t2 != null; t2 = Aold.nextTaskTask.get(t2)){
+				Solution A = changingTaskOrder(Aold, vi, t1, t2, tPre1, tPre2);
+				if(A.verifyConstraints()){
+					N.add(A);
+				}
+				tPre2 = t2;
+			}
+			tPre1 = t1;
 		}
 		
 		System.out.println(189);
@@ -208,7 +226,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 				bestSolution = solution;
 			}
 		}
-
+		
 		return bestSolution;
 	}
 
@@ -232,9 +250,34 @@ public class CentralizedAgent implements CentralizedBehavior {
 	//TODO There's a bug causing a loop in the tasks.
 	//TODO There's a bug causing null to be in the hashmap
 	//TODO Reecrire la fonction completement parceque leur code c'est vraiment de la merde.
-	public Solution changingTaskOrder(Solution A, Vehicle vi, int taskIndex1, int taskIndex2) {
+	public Solution changingTaskOrder(Solution A, Vehicle vi, Task t1, Task t2, Task tPre1,  Task tPre2) {
 		Solution A1 = new Solution(A, "changingTaskOrder");
-		System.out.println(230);
+		
+		Task tPost1 = A1.nextTaskTask.get(t1);
+		Task tPost2 = A1.nextTaskTask.get(t2);
+		
+		if (tPost1.equals(t2)) {
+			if(tPre1 != null){
+				A1.nextTaskTask.put(tPre1, t2);
+			} else {
+				A1.nextTaskVehicle.put(vi, t2);
+			}
+			A1.nextTaskTask.put(t2, t1);
+			A1.nextTaskTask.put(t1, tPost2);
+		} else {
+
+			if(tPre1 != null){
+				A1.nextTaskTask.put(tPre1, t2);
+			} else {
+				A1.nextTaskVehicle.put(vi, t2);
+			}
+			A1.nextTaskTask.put(tPre2, t1);
+			A1.nextTaskTask.put(t2, tPost1);
+			A1.nextTaskTask.put(t1, tPost2);
+		}
+		
+		
+		/*System.out.println(230);
 		// TODO wat?
 		// Task tPre1 = vi
 		Task tPre1 = null;
@@ -270,6 +313,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 			A1.nextTaskTask.put(t2, tPost1);
 			A1.nextTaskTask.put(t1, tPost2);
 		}
+		*/
 		System.out.println(264);
 		updateTime(A1, vi);
 		
@@ -441,7 +485,7 @@ class Solution {
 		// Constraint 3
 		for (Task ti : nextTaskTask.keySet()) {
 			Task tj = nextTaskTask.get(ti);
-			System.out.println(ti + " "+tj);
+			
 			if (tj!=null && time.get(tj) != time.get(ti) + 1) {
 				return false;
 			}
@@ -470,12 +514,11 @@ class Solution {
 
 		// Constraint 7
 		for(Vehicle v: vehicles){
-			Task ti = null;
 			int carriedWeight = 0;
-			for (Task t : v.getCurrentTasks()) {
+			for (Task t = nextTaskVehicle.get(v); t != null; t= nextTaskVehicle.get(t)) {
 				carriedWeight += t.weight;
 			}
-			if (ti.weight + carriedWeight > v.capacity()) {
+			if (carriedWeight > v.capacity()) {
 				return false;
 			}
 		}

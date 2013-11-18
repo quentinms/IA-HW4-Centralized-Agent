@@ -1,5 +1,4 @@
 
-//the list of imports
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -345,6 +344,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 class Solution {
 
+	// TODO: privatiser/publiquiser toutes les variables une fois que le reste fonctionne.
 	HashMap<Task, Task> nextTaskTask;
 	HashMap<Vehicle, Task> nextTaskVehicle;
 	HashMap<Task, Integer> time;
@@ -360,8 +360,8 @@ class Solution {
 		nextTaskVehicle = new HashMap<Vehicle, Task>();
 		time = new HashMap<Task, Integer>();
 		vehicleTaskMap = new HashMap<Task, Vehicle>();
-		this.tasks = tasks;
-		this.vehicles = vehicles;
+		Solution.tasks = tasks;
+		Solution.vehicles = vehicles;
 	}
 
 	public Solution(Solution parentSolution, String debug) {
@@ -434,6 +434,7 @@ class Solution {
 	}
 
 	double computeCost() {
+		
 		double cost = 0.0;
 
 		for (Task ti : tasks) {
@@ -455,53 +456,66 @@ class Solution {
 		}
 
 		return cost;
+		
 	}
 
 	/**
 	 * TODO verify that it is correct http://i.imgur.com/xVyoSl.jpg
-	 * @return True if the constraints are fulfilled, false otherwise.
+	 * @return true if the constraints are fulfilled, false otherwise.
 	 */
 	 Boolean verifyConstraints() {
 
-		// Constraint 1
-		for (int index = 0; index < nextTaskTask.size(); index++) {
-			Task currentTask = nextTaskTask.get(index);
-			Task nextTask = nextTaskTask.get(index + 1);
-
+		/*
+		 * Constraint 1
+		 * nextTask(t) ≠ t: the task delivered after
+		 * some task t cannot be the same task.
+		 */
+		for (int i = 0; i < nextTaskTask.size(); i++) {
+			Task currentTask = nextTaskTask.get(i);
+			Task nextTask = nextTaskTask.get(i + 1);
 			if (currentTask != null && currentTask.equals(nextTask)) {
 				return false;
 			}
-
 		}
 
-		// Constraint 2
-		for (Vehicle vehicle : vehicles) {
-			Task tj = nextTaskVehicle.get(vehicle);
-
-			if (tj!=null && time.get(tj) != 1) {
+		/*
+		 * Constraint 2
+		 * nextTask(vk) = tj ⇒ time(tj) = 1: already explained
+		 */
+		for (Vehicle vk : vehicles) {
+			Task tj = nextTaskVehicle.get(vk);
+			if (tj != null && time.get(tj) != 1) {
 				return false;
 			}
 		}
 
-		// Constraint 3
+		/*
+		 * Constraint 3
+		 * nextTask(ti) = tj ⇒ time(tj) = time(ti) + 1:
+		 * already explained
+		 */
 		for (Task ti : nextTaskTask.keySet()) {
 			Task tj = nextTaskTask.get(ti);
-			
 			if (tj != null && time.get(tj) != time.get(ti) + 1) {
 				return false;
 			}
-
 		}
 
-		// Constraint 4
-		for (Vehicle vehicle : vehicles) {
-			Task tj = nextTaskVehicle.get(vehicle);
-			if (!vehicle.equals(vehicleTaskMap.get(tj))) {
+		/*
+		 * Constraint 4
+		 * nextTask(vk) = tj ⇒ vehicle(tj) = vk: already explained
+		 */
+		for (Vehicle vk : vehicles) {
+			Task tj = nextTaskVehicle.get(vk);
+			if (!vk.equals(vehicleTaskMap.get(tj))) {
 				return false;
 			}
 		}
 
-		// Constraint 5
+		/*
+		 * Constraint 5
+		 * nextTask(ti) = tj ⇒ vehicle(tj) = vehicle(ti): already explained
+		 */
 		for (Task ti : nextTaskTask.keySet()) {
 			Task tj = nextTaskTask.get(ti);
 			if (!vehicleTaskMap.get(tj).equals(vehicleTaskMap.get(ti))) {
@@ -509,16 +523,55 @@ class Solution {
 			}
 		}
 
-		// TODO Constraint 6
-		// WTF
-
-		// Constraint 7
-		for (Vehicle vehicle: vehicles) {
-			int carriedWeight = 0;
-			for (Task task = nextTaskVehicle.get(vehicle); task != null; task = nextTaskVehicle.get(task)) {
-				carriedWeight += task.weight;
+		/*
+		 * Constraint 6
+		 * TODO: verify & approve intent.
+		 * all tasks must be delivered: the set of values of the variables
+		 * in the nextTask array must be equal to the set of tasks T plus
+		 * NV times the value NULL
+		 */
+		
+		// return false if taskCounter + nullCounter ≠ |nextTask| + NV
+		int nullCounter = 0;
+		int taskCounter = 0;
+		
+		for (int i = 0; i < nextTaskTask.size(); i++) {
+			Task currentTask = nextTaskTask.get(i);
+			if (currentTask == null) {
+				nullCounter++;
+			} else if (!tasks.contains(currentTask)) {
+				return false;
+			} else {
+				taskCounter++;
 			}
-			if (carriedWeight > vehicle.capacity()) {
+		}
+		
+		for (int i = 0; i < nextTaskVehicle.size(); i++) {
+			Task currentTask = nextTaskTask.get(i);
+			if (currentTask == null) {
+				nullCounter++;
+			} else if (!tasks.contains(currentTask)) {
+				return false;
+			} else {
+				taskCounter++;
+			}
+		}
+		
+		if (nullCounter + taskCounter != nextTaskTask.size() + nextTaskVehicle.size() + vehicles.size()) {
+			return false;
+		}
+
+		/*
+		 * Constraint 7
+		 * the capacity of a vehicle cannot be exceeded:
+		 * if load(ti) > capacity(vk) then vehicle(ti) ≠ vk
+		 */
+		for (Vehicle vk : vehicles) {
+			int carriedWeight = 0;
+			for (Task ti = nextTaskVehicle.get(vk); ti != null; ti = nextTaskVehicle.get(ti)) {
+				carriedWeight += ti.weight;
+			}
+			if (carriedWeight > vk.capacity()) { // TODO: && vehicleTaskMap.get(ti).equals(vk) ?
 				return false;
 			}
 		}

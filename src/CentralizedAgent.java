@@ -70,8 +70,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 		
 		Solution A = selectInitialSolution(vehicles, tasks);
 		
-		//Solution Aold = null;
-		List<Solution> N = null;
+		List<Solution> N = null; // TODO virer le = null quand tout le reste marchera
 		Boolean ok = true;
 
 		int count = 0;
@@ -83,7 +82,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 			System.out.println("Choosing neighbours");
 			N = chooseNeighbours(Aold, tasks, vehicles);
 			
-			// Should Aold be in N?
+			// TODO Should Aold be in N?
 			System.out.println("Choosing the local best");
 			A = localChoice(N);
 			System.out.println("A:"+A.debug);
@@ -104,6 +103,14 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 	}
 
+	/**
+	 * As an initial solution, we just take the vehicle with biggest capacity
+	 * and assign all the tasks to it.
+	 * TODO any clue why the problem isn't solvable if all tasks don't fit in the biggest vehicle?
+	 * @param vehicles the list of vehicles
+	 * @param tasks the liste of tasks
+	 * @return an initial solution
+	 */
 	private Solution selectInitialSolution(List<Vehicle> vehicles, TaskSet tasks) {
 
 		Vehicle biggestVehicle = null;
@@ -154,12 +161,14 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 		//System.out.println("146");
 
+		// Applying the changing vehicle operator:
 		for (Vehicle vj : vehicles) {
 			if (!vj.equals(vi)) {
 				Task t = Aold.nextTaskVehicle.get(vi);
 				//System.out.println(151);
-				// TODO gérer le poids
-				if (t.weight < vj.capacity()) {
+				// TODO gerer le poids
+				if (t.weight <= vj.capacity()) {
+					//TODO: plutôt while(!A.verifyConstraints) {} non ?
 					Solution A = changingVehicle(Aold, vi, vj);
 					if (A.verifyConstraints()) {
 						N.add(A);
@@ -170,6 +179,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 		//System.out.println("160");
 
+		// Applying the changing task order operator:
 		// TODO waaat?
 		// Task t = vi
 		/*Task t = Aold.nextTaskVehicle.get(vi);
@@ -186,7 +196,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 			for (int tIndex1 = 1; tIndex1 < length; tIndex1++) {
 				for (int tIndex2 = tIndex1 + 1; tIndex2 <= length; tIndex2++) {
 					Solution A = changingTaskOrder(Aold, vi, tIndex1, tIndex2);
-					if(A.verifyConstraints()){
+					if (A.verifyConstraints()) { // TODO pareil, un while non ?
 						N.add(A);
 					}
 				}
@@ -423,6 +433,7 @@ class Solution {
 
 	/**
 	 * TODO verify that it is correct http://i.imgur.com/xVyoSl.jpg
+	 * Rivo: looks okay to me :)
 	 * @return true if the constraints are fulfilled, false otherwise.
 	 */
 	 Boolean verifyConstraints() {

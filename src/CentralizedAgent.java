@@ -75,8 +75,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 		Boolean ok = true;
 
 		int count = 0;
-		//TODO sometimes, A is null. Not sure if it should happen
-		while (count < 1000 && A != null && Aold.cost > A.cost) {
+		while (count < 1000 && A.cost < Aold.cost) {
 			
 			System.out.println("Creating new solution");
 			Aold = new Solution(A, "cloning");
@@ -87,6 +86,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 			// Should Aold be in N?
 			System.out.println("Choosing the local best");
 			A = localChoice(N);
+			System.out.println("A:"+A.debug);
 			
 			System.out.println("Next round");
 			System.out.println();
@@ -146,19 +146,19 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 		List<Solution> N = new ArrayList<Solution>();
 		Vehicle vi = null;
-		System.out.println("141");
+		//System.out.println("141");
 		
 		while (vi == null || Aold.nextTaskVehicle.get(vi) == null) {
 			vi = vehicles.get((int) (Math.random() * vehicles.size()));
 		}
 
-		System.out.println("146");
+		//System.out.println("146");
 
 		for (Vehicle vj : vehicles) {
 			if (!vj.equals(vi)) {
 				Task t = Aold.nextTaskVehicle.get(vi);
-				System.out.println(151);
-				// TODO gerer le poids
+				//System.out.println(151);
+				// TODO gérer le poids
 				if (t.weight < vj.capacity()) {
 					Solution A = changingVehicle(Aold, vi, vj);
 					if (A.verifyConstraints()) {
@@ -168,7 +168,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 			}
 		}
 
-		System.out.println("160");
+		//System.out.println("160");
 
 		// TODO waaat?
 		// Task t = vi
@@ -206,7 +206,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 			tPre1 = t1;
 		}
 		
-		System.out.println(189);
+		//System.out.println(189);
 		return N;
 
 	}
@@ -224,29 +224,28 @@ public class CentralizedAgent implements CentralizedBehavior {
 			}
 		}
 		
+		System.out.println(bestSolution.cost);
 		return bestSolution;
 	}
 
 	public Solution changingVehicle(Solution A, Vehicle v1, Vehicle v2) {
-		System.out.println("A");
+		//System.out.println("A");
 		Solution A1 = new Solution(A, "changingVehicle");
 		Task t = A.nextTaskVehicle.get(v1);
-		System.out.println("B");
+		//System.out.println("B");
 		A1.nextTaskVehicle.put(v1, A1.nextTaskTask.get(t));
 		A1.nextTaskTask.put(t, A1.nextTaskVehicle.get(v2));
 		A1.nextTaskVehicle.put(v2, t);
-		System.out.println("C");
+		A1.vehicleTaskMap.put(t, v2);
+		//System.out.println("C");
 		updateTime(A1, v1);
 		updateTime(A1, v2);
-		System.out.println("D");
-		A1.vehicleTaskMap.put(t, v2);
+		//System.out.println("D");
+		
 		A1.cost = A1.computeCost();
 		return A1;
 	}
 	
-	//TODO There's a bug causing a loop in the tasks.
-	//TODO There's a bug causing null to be in the hashmap
-	//TODO Reecrire la fonction completement parceque leur code c'est vraiment de la merde.
 	public Solution changingTaskOrder(Solution A, Vehicle vi, Task t1, Task t2, Task tPre1,  Task tPre2) {
 		Solution A1 = new Solution(A, "changingTaskOrder");
 		
@@ -273,57 +272,18 @@ public class CentralizedAgent implements CentralizedBehavior {
 			A1.nextTaskTask.put(t1, tPost2);
 		}
 		
-		
-		/*System.out.println(230);
-		// TODO wat?
-		// Task tPre1 = vi
-		Task tPre1 = null;
-
-		Task t1 = A1.nextTaskVehicle.get(vi);
-		System.out.println(236);
-		for (int count = 1; count < taskIndex1; count++) {
-			tPre1 = t1;
-			t1 = A1.nextTaskTask.get(t1);
-		}
-		System.out.println(tPre1);//TODO tPre1 should not be null, I guess
-		System.out.println(240);
-		Task tPost1 = A1.nextTaskTask.get(t1);
-		Task tPre2 = t1;
-
-		Task t2 = A1.nextTaskTask.get(tPre2);
-
-		for (int count = taskIndex1; count < taskIndex2; count++) {
-			tPre2 = t2;
-			t2 = A1.nextTaskTask.get(t2);
-		}
-		System.out.println(250);
-		Task tPost2 = A1.nextTaskTask.get(t2);
-		//TODO t2, tPre1, tPre2, etc. should not be null
-		if (tPost1.equals(t2)) {
-			A1.nextTaskTask.put(tPre1, t2);
-			A1.nextTaskTask.put(t2, t1);
-			A1.nextTaskTask.put(t1, tPost2);
-		} else {
-
-			A1.nextTaskTask.put(tPre1, t2);
-			A1.nextTaskTask.put(tPre2, t1);
-			A1.nextTaskTask.put(t2, tPost1);
-			A1.nextTaskTask.put(t1, tPost2);
-		}
-		*/
-		
-		System.out.println(264);
+		//System.out.println(264);
 		updateTime(A1, vi);
 		
 		A1.cost = A1.computeCost();
-		System.out.println(268);
+		//System.out.println(268);
 		return A1;
 
 	}
 
 	public void updateTime(Solution A, Vehicle v) {
 		Task ti = A.nextTaskVehicle.get(v);
-		System.out.println(275); System.out.println("*************" + A.debug);
+		//System.out.println(275); System.out.println("*************" + A.debug);
 		if (ti != null) {
 			A.time.put(ti, 1);
 			Task tj = null;
@@ -423,9 +383,11 @@ class Solution {
 				}
 
 				plans.add(plan);
+				System.out.println("Vehicle "+v.id()+"'s cost is "+plan.totalDistance());
 				
 			} else {
 				plans.add(Plan.EMPTY);
+				System.out.println("Vehicle "+v.id()+"'s cost is "+0);
 			}
 
 		}
@@ -467,58 +429,63 @@ class Solution {
 
 		/*
 		 * Constraint 1
-		 * nextTask(t) ≠ t: the task delivered after
+		 * nextTask(t) ��� t: the task delivered after
 		 * some task t cannot be the same task.
 		 */
 		for (int i = 0; i < nextTaskTask.size(); i++) {
 			Task currentTask = nextTaskTask.get(i);
 			Task nextTask = nextTaskTask.get(i + 1);
 			if (currentTask != null && currentTask.equals(nextTask)) {
+				System.out.println("Constraint1");
 				return false;
 			}
 		}
 
 		/*
 		 * Constraint 2
-		 * nextTask(vk) = tj ⇒ time(tj) = 1: already explained
+		 * nextTask(vk) = tj ��� time(tj) = 1: already explained
 		 */
 		for (Vehicle vk : vehicles) {
 			Task tj = nextTaskVehicle.get(vk);
 			if (tj != null && time.get(tj) != 1) {
+				System.out.println("Constraint2");
 				return false;
 			}
 		}
 
 		/*
 		 * Constraint 3
-		 * nextTask(ti) = tj ⇒ time(tj) = time(ti) + 1:
+		 * nextTask(ti) = tj ��� time(tj) = time(ti) + 1:
 		 * already explained
 		 */
 		for (Task ti : nextTaskTask.keySet()) {
 			Task tj = nextTaskTask.get(ti);
 			if (tj != null && time.get(tj) != time.get(ti) + 1) {
+				System.out.println("Constraint3");
 				return false;
 			}
 		}
 
 		/*
 		 * Constraint 4
-		 * nextTask(vk) = tj ⇒ vehicle(tj) = vk: already explained
+		 * nextTask(vk) = tj ��� vehicle(tj) = vk: already explained
 		 */
 		for (Vehicle vk : vehicles) {
 			Task tj = nextTaskVehicle.get(vk);
-			if (!vk.equals(vehicleTaskMap.get(tj))) {
+			if (tj!= null && !vk.equals(vehicleTaskMap.get(tj))) {
+				System.out.println("Constraint4 "+this.debug);
 				return false;
 			}
 		}
 
 		/*
 		 * Constraint 5
-		 * nextTask(ti) = tj ⇒ vehicle(tj) = vehicle(ti): already explained
+		 * nextTask(ti) = tj ⇒ vehicle(tj) = vehicle(ti)
 		 */
 		for (Task ti : nextTaskTask.keySet()) {
 			Task tj = nextTaskTask.get(ti);
-			if (!vehicleTaskMap.get(tj).equals(vehicleTaskMap.get(ti))) {
+			if (tj != null && !vehicleTaskMap.get(tj).equals(vehicleTaskMap.get(ti))) {
+				System.out.println("Constraint5");
 				return false;
 			}
 		}
@@ -531,10 +498,24 @@ class Solution {
 		 * NV times the value NULL
 		 */
 		
-		// return false if taskCounter + nullCounter ≠ |nextTask| + NV
+		// return false if taskCounter + nullCounter ��� |nextTask| + NV
 		int nullCounter = 0;
-		int taskCounter = 0;
 		
+		TaskSet verifTasks = TaskSet.copyOf(tasks);
+		
+		for (Vehicle v: vehicles){
+			for (Task t = nextTaskVehicle.get(v); t != null; t = nextTaskTask.get(t)){
+				Boolean removed = verifTasks.remove(t);
+				if(!removed){
+					//We cannot remove this task, either we already removed the task, or it should not exist
+					return false;
+				}
+			}
+			nullCounter++;
+		}
+		
+		
+		/*
 		for (int i = 0; i < nextTaskTask.size(); i++) {
 			Task currentTask = nextTaskTask.get(i);
 			if (currentTask == null) {
@@ -546,35 +527,38 @@ class Solution {
 			}
 		}
 		
+		
 		for (int i = 0; i < nextTaskVehicle.size(); i++) {
-			Task currentTask = nextTaskTask.get(i);
+			Task currentTask = nextTaskVehicle.get(i);
 			if (currentTask == null) {
 				nullCounter++;
-			} else if (!tasks.contains(currentTask)) {
+			} else if (!tasks.contains(currentTask)) { //Will never happen
 				return false;
 			} else {
 				taskCounter++;
 			}
-		}
+		}*/
 		
-		if (nullCounter + taskCounter != nextTaskTask.size() + nextTaskVehicle.size() + vehicles.size()) {
+		if (!verifTasks.isEmpty() || nullCounter != vehicles.size()) {
+			System.out.println("Constraint6 "+verifTasks.size()+"/"+tasks.size()+" - "+nullCounter+"/"+vehicles.size());
 			return false;
 		}
 
 		/*
-		 * Constraint 7
+		 * Constraint 7 //TODO gérer le poids
 		 * the capacity of a vehicle cannot be exceeded:
-		 * if load(ti) > capacity(vk) then vehicle(ti) ≠ vk
-		 */
+		 * the capacity of a vehicle cannot be exceeded: if load(ti) > capacity(vk) ⇒ vehicle(ti)  ̸= vk
+		 *
 		for (Vehicle vk : vehicles) {
 			int carriedWeight = 0;
-			for (Task ti = nextTaskVehicle.get(vk); ti != null; ti = nextTaskVehicle.get(ti)) {
+			for (Task ti = nextTaskVehicle.get(vk); ti != null; ti = nextTaskTask.get(ti)) {
 				carriedWeight += ti.weight;
 			}
 			if (carriedWeight > vk.capacity()) { // TODO: && vehicleTaskMap.get(ti).equals(vk) ?
+				System.out.println("Constraint7 "+carriedWeight+"/"+vk.capacity());
 				return false;
 			}
-		}
+		}*/
 
 		return true;
 	}

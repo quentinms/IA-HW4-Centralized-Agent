@@ -19,7 +19,6 @@ import logist.topology.Topology.City;
 /**
  * A very simple auction agent that assigns all tasks to its first vehicle and
  * handles them sequentially.
- * 
  */
 @SuppressWarnings("unused")
 public class CentralizedAgent implements CentralizedBehavior {
@@ -29,8 +28,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 	private Agent agent;
 
 	@Override
-	public void setup(Topology topology, TaskDistribution distribution,
-			Agent agent) {
+	public void setup(Topology topology, TaskDistribution distribution, Agent agent) {
 
 		this.topology = topology;
 		this.distribution = distribution;
@@ -39,9 +37,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 	@Override
 	public List<Plan> plan(List<Vehicle> vehicles, TaskSet tasks) {
-
 		// System.out.println("Agent " + agent.id() + " has tasks " + tasks);
-
 		return centralizedPlan(vehicles, tasks);
 	}
 
@@ -70,7 +66,6 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 	private List<Plan> centralizedPlan(List<Vehicle> vehicles, TaskSet tasks) {
 
-		
 		Solution Aold = new Solution(tasks, vehicles);
 		Aold.cost = Double.POSITIVE_INFINITY;
 		
@@ -82,16 +77,19 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 		int count = 0;
 		//TODO sometimes, A is null. Not sure if it should happen
-		while (count < 1000 && A!= null &&Aold.cost > A.cost) {
+		while (count < 1000 && A != null && Aold.cost > A.cost) {
+			
 			System.out.println("Creating new solution");
 			Aold = new Solution(A, "cloning");
+			
 			System.out.println("Choosing neighbours");
 			N = chooseNeighbours(Aold, tasks, vehicles);
+			
 			// Should Aold be in N?
 			System.out.println("Choosing the local best");
 			A = localChoice(N);
-			System.out.println("Next round");
 			
+			System.out.println("Next round");
 			System.out.println();
 
 			count++;
@@ -120,21 +118,21 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 		Solution initialSolution = new Solution(tasks, vehicles);
 
-		Task previousT = null;
+		Task previousTask = null;
 		int counter = 1;
 
-		for (Task t : tasks) {
+		for (Task task : tasks) {
 
-			if (previousT == null) {
-				initialSolution.nextTaskVehicle.put(biggestVehicle, t);
+			if (previousTask == null) {
+				initialSolution.nextTaskVehicle.put(biggestVehicle, task);
 			} else {
-				initialSolution.nextTaskTask.put(previousT, t);
+				initialSolution.nextTaskTask.put(previousTask, task);
 			}
 
-			initialSolution.vehicleTaskMap.put(t, biggestVehicle);
-			initialSolution.time.put(t, counter);
+			initialSolution.vehicleTaskMap.put(task, biggestVehicle);
+			initialSolution.time.put(task, counter);
 
-			previousT = t;
+			previousTask = task;
 			counter++;
 
 		}
@@ -142,14 +140,15 @@ public class CentralizedAgent implements CentralizedBehavior {
 		initialSolution.cost = initialSolution.computeCost();
 
 		return initialSolution;
+		
 	}
 
-	private List<Solution> chooseNeighbours(Solution Aold, TaskSet tasks,
-			List<Vehicle> vehicles) {
+	private List<Solution> chooseNeighbours(Solution Aold, TaskSet tasks, List<Vehicle> vehicles) {
 
 		List<Solution> N = new ArrayList<Solution>();
 		Vehicle vi = null;
 		System.out.println("141");
+		
 		while (vi == null || Aold.nextTaskVehicle.get(vi) == null) {
 			vi = vehicles.get((int) (Math.random() * vehicles.size()));
 		}
@@ -163,7 +162,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 				// TODO gerer le poids
 				if (t.weight < vj.capacity()) {
 					Solution A = changingVehicle(Aold, vi, vj);
-					if(A.verifyConstraints()){
+					if (A.verifyConstraints()) {
 						N.add(A);
 					}
 				}
@@ -196,11 +195,11 @@ public class CentralizedAgent implements CentralizedBehavior {
 		}*/
 		
 		Task tPre1 = null;
-		for(Task t1 = Aold.nextTaskVehicle.get(vi); t1 != null; t1 = Aold.nextTaskTask.get(t1)){
+		for (Task t1 = Aold.nextTaskVehicle.get(vi); t1 != null; t1 = Aold.nextTaskTask.get(t1)) {
 			Task tPre2 = t1;
-			for(Task t2 = Aold.nextTaskTask.get(t1); t2 != null; t2 = Aold.nextTaskTask.get(t2)){
+			for (Task t2 = Aold.nextTaskTask.get(t1); t2 != null; t2 = Aold.nextTaskTask.get(t2)) {
 				Solution A = changingTaskOrder(Aold, vi, t1, t2, tPre1, tPre2);
-				if(A.verifyConstraints()){
+				if (A.verifyConstraints()) {
 					N.add(A);
 				}
 				tPre2 = t2;
@@ -209,7 +208,6 @@ public class CentralizedAgent implements CentralizedBehavior {
 		}
 		
 		System.out.println(189);
-
 		return N;
 
 	}
@@ -314,6 +312,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 			A1.nextTaskTask.put(t1, tPost2);
 		}
 		*/
+		
 		System.out.println(264);
 		updateTime(A1, vi);
 		
@@ -386,6 +385,7 @@ class Solution {
 			Task t = nextTaskVehicle.get(v);
 
 			if (t != null) {
+				
 				for (City city : current.pathTo(t.pickupCity))
 					plan.appendMove(city);
 
@@ -423,6 +423,7 @@ class Solution {
 				}
 
 				plans.add(plan);
+				
 			} else {
 				plans.add(Plan.EMPTY);
 			}
@@ -436,19 +437,20 @@ class Solution {
 		double cost = 0.0;
 
 		for (Task ti : tasks) {
-			Task nextT = nextTaskTask.get(ti);
-			if (nextT != null) {
-				cost += (ti.deliveryCity.distanceTo(nextT.pickupCity) + nextT.pickupCity
-						.distanceTo(nextT.deliveryCity))
+			Task nextTask = nextTaskTask.get(ti);
+			if (nextTask != null) {
+				cost += (ti.deliveryCity.distanceTo(nextTask.pickupCity)
+						+ nextTask.pickupCity.distanceTo(nextTask.deliveryCity))
 						* vehicleTaskMap.get(ti).costPerKm();
 			}
 		}
 
 		for (Vehicle vi : vehicles) {
-			Task nextT = nextTaskVehicle.get(vi);
-			if (nextT != null) {
-				cost += (vi.homeCity().distanceTo(nextT.pickupCity) + nextT.pickupCity
-						.distanceTo(nextT.deliveryCity)) * vi.costPerKm();
+			Task nextTask = nextTaskVehicle.get(vi);
+			if (nextTask != null) {
+				cost += (vi.homeCity().distanceTo(nextTask.pickupCity)
+						+ nextTask.pickupCity.distanceTo(nextTask.deliveryCity))
+						* vi.costPerKm();
 			}
 		}
 
@@ -457,7 +459,6 @@ class Solution {
 
 	/**
 	 * TODO verify that it is correct http://i.imgur.com/xVyoSl.jpg
-	 * 
 	 * @return True if the constraints are fulfilled, false otherwise.
 	 */
 	 Boolean verifyConstraints() {
@@ -474,8 +475,8 @@ class Solution {
 		}
 
 		// Constraint 2
-		for(Vehicle v: vehicles){
-			Task tj = nextTaskVehicle.get(v);
+		for (Vehicle vehicle : vehicles) {
+			Task tj = nextTaskVehicle.get(vehicle);
 
 			if (tj!=null && time.get(tj) != 1) {
 				return false;
@@ -486,16 +487,16 @@ class Solution {
 		for (Task ti : nextTaskTask.keySet()) {
 			Task tj = nextTaskTask.get(ti);
 			
-			if (tj!=null && time.get(tj) != time.get(ti) + 1) {
+			if (tj != null && time.get(tj) != time.get(ti) + 1) {
 				return false;
 			}
 
 		}
 
 		// Constraint 4
-		for(Vehicle v: vehicles){
-			Task tj = nextTaskVehicle.get(v);
-			if (!v.equals(vehicleTaskMap.get(tj))) {
+		for (Vehicle vehicle : vehicles) {
+			Task tj = nextTaskVehicle.get(vehicle);
+			if (!vehicle.equals(vehicleTaskMap.get(tj))) {
 				return false;
 			}
 		}
@@ -503,7 +504,6 @@ class Solution {
 		// Constraint 5
 		for (Task ti : nextTaskTask.keySet()) {
 			Task tj = nextTaskTask.get(ti);
-
 			if (!vehicleTaskMap.get(tj).equals(vehicleTaskMap.get(ti))) {
 				return false;
 			}
@@ -513,12 +513,12 @@ class Solution {
 		// WTF
 
 		// Constraint 7
-		for(Vehicle v: vehicles){
+		for (Vehicle vehicle: vehicles) {
 			int carriedWeight = 0;
-			for (Task t = nextTaskVehicle.get(v); t != null; t= nextTaskVehicle.get(t)) {
-				carriedWeight += t.weight;
+			for (Task task = nextTaskVehicle.get(vehicle); task != null; task = nextTaskVehicle.get(task)) {
+				carriedWeight += task.weight;
 			}
-			if (carriedWeight > v.capacity()) {
+			if (carriedWeight > vehicle.capacity()) {
 				return false;
 			}
 		}

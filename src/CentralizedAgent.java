@@ -355,12 +355,17 @@ public class CentralizedAgent implements CentralizedBehavior {
 			for (int j = indexT2+1; j <= A1.actionsList.get(vi).size(); j++){
 				Solution A_tmp = new Solution(A1, A1.debug+"-multi");
 	
+				//Inserting messes up the indexes
+				if(i < j){
+					j = j + 1;
+				}
+				
 				A_tmp.actionsList.get(vi).add(i, deliveryT2);
 				A_tmp.actionsList.get(vi).add(j, deliveryT1);
 				A_tmp.cost = A_tmp.computeCost();
 				
 				solutions.add(A_tmp);
-				System.out.println(solutions.size());
+				//System.out.println(solutions.size());
 			}	
 		}
 		
@@ -664,7 +669,7 @@ class Solution {
 					stack.add(action.task);
 				} else {
 					if(!stack.remove(action.task)){
-						System.out.println("Constraint 8 "+debug);
+						System.out.println("Constraint 8 "+debug+" - "+action.task);
 						return false;
 					}
 				}

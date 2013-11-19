@@ -1,4 +1,5 @@
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -71,10 +72,9 @@ public class CentralizedAgent implements CentralizedBehavior {
 		Solution A = selectInitialSolution(vehicles, tasks);
 		
 		List<Solution> N = null; // TODO virer le = null quand tout le reste marchera
-		Boolean ok = true;
 
 		int count = 0;
-		while (count < 1000 && A.cost < Aold.cost) {
+		while (count < 10000 && A.cost < Aold.cost) {
 			
 			System.out.println("Creating new solution");
 			Aold = new Solution(A, "cloning");
@@ -94,7 +94,8 @@ public class CentralizedAgent implements CentralizedBehavior {
 		}
 		
 		System.out.println(count);
-
+		
+		System.out.println(A.cost);
 		
 		return A.getPlan();
 	
@@ -132,9 +133,12 @@ public class CentralizedAgent implements CentralizedBehavior {
 			} else {
 				initialSolution.nextTaskTask.put(previousTask, task);
 			}
-
+			
 			initialSolution.vehicleTaskMap.put(task, biggestVehicle);
 			initialSolution.time.put(task, counter);
+			
+			initialSolution.actionsList.get(biggestVehicle).add(new Action(task, "pickup"));
+			initialSolution.actionsList.get(biggestVehicle).add(new Action(task, "delivery"));
 
 			previousTask = task;
 			counter++;
@@ -164,21 +168,21 @@ public class CentralizedAgent implements CentralizedBehavior {
 			if (!vj.equals(vi)) {
 				Task t = Aold.nextTaskVehicle.get(vi);
 				//System.out.println(151);
-				// TODO gerer le poids
-				if (t.weight <= vj.capacity()) {
-					//TODO: plutôt while(!A.verifyConstraints) {} non ?
-					Solution A = changingVehicle(Aold, vi, vj);
-					if (A.verifyConstraints()) {
-						N.add(A);
+				//if (t.weight <= vj.capacity()) {
+					List<Solution> A = changingVehicle(Aold, vi, vj);
+					
+					for(Solution solution: A){
+						if (solution.verifyConstraints()) {
+							N.add(solution);
+						}
 					}
-				}
+				//}
 			}
 		}
 
 		//System.out.println("160");
 
 		// Applying the changing task order operator:
-		// TODO waaat?
 		// Task t = vi
 		/*Task t = Aold.nextTaskVehicle.get(vi);
 		int length = 0;
@@ -194,7 +198,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 			for (int tIndex1 = 1; tIndex1 < length; tIndex1++) {
 				for (int tIndex2 = tIndex1 + 1; tIndex2 <= length; tIndex2++) {
 					Solution A = changingTaskOrder(Aold, vi, tIndex1, tIndex2);
-					if (A.verifyConstraints()) { // TODO pareil, un while non ?
+					if (A.verifyConstraints()) { //  pareil, un while non ?
 						N.add(A);
 					}
 				}
@@ -236,22 +240,41 @@ public class CentralizedAgent implements CentralizedBehavior {
 		return bestSolution;
 	}
 
-	public Solution changingVehicle(Solution A, Vehicle v1, Vehicle v2) {
+	public List<Solution> changingVehicle(Solution A, Vehicle v1, Vehicle v2) {
 		//System.out.println("A");
+		List<Solution> solutions = new ArrayList<Solution>();
+		
 		Solution A1 = new Solution(A, "changingVehicle");
 		Task t = A.nextTaskVehicle.get(v1);
 		//System.out.println("B");
+		
+		//Remove actions corresponding to Task t from V1
+		A1.actionsList.get(v1).remove(new Action(t, "pickup"));
+		A1.actionsList.get(v1).remove(new Action(t, "delivery"));
+		
 		A1.nextTaskVehicle.put(v1, A1.nextTaskTask.get(t));
 		A1.nextTaskTask.put(t, A1.nextTaskVehicle.get(v2));
 		A1.nextTaskVehicle.put(v2, t);
 		A1.vehicleTaskMap.put(t, v2);
-		//System.out.println("C");
+		
+		A1.actionsList.get(v2).add(0, new Action(t, "pickup"));
 		updateTime(A1, v1);
 		updateTime(A1, v2);
+		
+		for (int index = 1; index < A1.actionsList.get(v2).size(); index++){
+			Solution A_tmp = new Solution(A1, A1.debug+"-multi");
+			A_tmp.actionsList.get(v2).add(index, new Action(t, "delivery"));
+			A_tmp.cost = A_tmp.computeCost();
+			
+			solutions.add(A_tmp);
+		}
+		
+		//System.out.println("C");
+		
 		//System.out.println("D");
 		
-		A1.cost = A1.computeCost();
-		return A1;
+		//A1.cost = A1.computeCost();
+		return solutions;
 	}
 	
 	public Solution changingTaskOrder(Solution A, Vehicle vi, Task t1, Task t2, Task tPre1,  Task tPre2) {
@@ -317,6 +340,7 @@ class Solution {
 	HashMap<Vehicle, Task> nextTaskVehicle;
 	HashMap<Task, Integer> time;
 	HashMap<Task, Vehicle> vehicleTaskMap;
+	HashMap<Vehicle, List<Action>> actionsList;
 	Double cost;
 	String debug;
 
@@ -328,6 +352,10 @@ class Solution {
 		nextTaskVehicle = new HashMap<Vehicle, Task>();
 		time = new HashMap<Task, Integer>();
 		vehicleTaskMap = new HashMap<Task, Vehicle>();
+		actionsList = new HashMap<Vehicle, List<Action>>();
+		for(Vehicle v: vehicles){
+			actionsList.put(v, new ArrayList<Action>());
+		}
 		Solution.tasks = tasks;
 		Solution.vehicles = vehicles;
 	}
@@ -337,6 +365,8 @@ class Solution {
 		nextTaskVehicle = new HashMap<Vehicle, Task>(parentSolution.nextTaskVehicle);
 		time = new HashMap<Task, Integer>(parentSolution.time);
 		vehicleTaskMap = new HashMap<Task, Vehicle>(parentSolution.vehicleTaskMap);
+		actionsList = new HashMap<Vehicle, List<Action>>(parentSolution.actionsList);
+		
 		cost = computeCost();
 		this.debug = debug;
 	}
@@ -393,7 +423,7 @@ class Solution {
 				}
 
 				plans.add(plan);
-				System.out.println("Vehicle "+v.id()+"'s cost is "+plan.totalDistance());
+				System.out.println("Vehicle "+v.id()+"'s cost is "+(plan.totalDistance()*v.costPerKm()));
 				
 			} else {
 				plans.add(Plan.EMPTY);
@@ -412,10 +442,16 @@ class Solution {
 		double cost = 0.0;
 		
 		for (Vehicle v: vehicles){
-			City currentCity = v.getCurrentCity();
-			for(Task t = nextTaskVehicle.get(v); t != null; t = nextTaskTask.get(t)){
+			City currentCity = v.homeCity();
+			
+			/*for(Task t = nextTaskVehicle.get(v); t != null; t = nextTaskTask.get(t)){
 				cost += (currentCity.distanceTo(t.pickupCity)+t.pickupCity.distanceTo(t.deliveryCity))*v.costPerKm();
 				currentCity = t.deliveryCity;
+			}*/
+			
+			for(Action action: actionsList.get(v)){
+				cost+=currentCity.distanceTo(action.city)*v.costPerKm();
+				currentCity = action.city;
 			}
 			
 		}
@@ -561,6 +597,43 @@ class Solution {
 				return false;
 			}
 		}*/
+		
+		for(Vehicle v: vehicles){
+			int carriedWeight = 0;
+			for(Action action: actionsList.get(v)){
+				if(action.actionType.equals("pickup")){
+					carriedWeight += action.task.weight;
+				} else {
+					carriedWeight -= action.task.weight;
+				}
+	
+				if(carriedWeight > v.capacity()){
+					System.out.println("Constraint 7");
+					return false;
+				}
+			}
+		}
+		
+		
+		/*Constraint 8
+		 * Verify that pickups are before deliveries
+		 * */
+		
+		for(Vehicle v: vehicles){
+			ArrayList<Task> stack = new ArrayList<Task>();
+			
+			for(Action action: actionsList.get(v)){
+				if(action.actionType.equals("pickup")){
+					stack.add(action.task);
+				} else {
+					if(!stack.remove(action.task)){
+						System.out.println("Constraint 8");
+						return false;
+					}
+				}
+			}
+			
+		}
 
 		return true;
 	}
@@ -570,4 +643,29 @@ class Solution {
 		return debug+" : "+cost+" | ";
 	}
 	 
+}
+
+class Action{
+	Task task;
+	String actionType;
+	City city;
+	
+	public Action(Task t, String type){
+		task = t;
+		actionType = type;
+		if(actionType.equals("pickup")){
+			city = task.pickupCity;
+		} else {
+			city = task.deliveryCity;
+		}
+	}
+	
+	@Override
+	public String toString() {
+		return actionType+" Task"+task.id+" in "+city;
+	}
+	
+	public boolean equals(Action action) {
+		return this.task.equals(action.task) && this.actionType.equals(action.actionType);
+	}
 }

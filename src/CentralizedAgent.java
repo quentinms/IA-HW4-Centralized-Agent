@@ -241,13 +241,21 @@ public class CentralizedAgent implements CentralizedBehavior {
 		Solution A1 = new Solution(A, "changingVehicle");
 		Task t = A.nextTaskVehicle.get(v1);
 		//System.out.println("B");
-		System.out.println("befor: "+A.nextTaskVehicle);
+//		System.out.println("before: " + A1);
+		System.out.println("Should link v1 to " + A1.nextTaskTask.get(t));
 		A1.nextTaskVehicle.put(v1, A1.nextTaskTask.get(t));
+		System.out.println("A1.nexttaskvehicle(v1) = " + A1.nextTaskVehicle.get(v1));
+		System.out.println("Should link t to " + A1.nextTaskVehicle.get(v2));
 		A1.nextTaskTask.put(t, A1.nextTaskVehicle.get(v2));
+		System.out.println("A1.nexttasktask(t) = " + A1.nextTaskTask.get(t));
+		System.out.println("Should link v2 to " + t);
 		A1.nextTaskVehicle.put(v2, t);
+		System.out.println("nexttaskvehicle(v2) = " + t);
+		System.out.println("Should link t to " + v2);
 		A1.vehicleTaskMap.put(t, v2);
+		System.out.println("nexttaskmap(t) = " + v2);
 		//System.out.println("C");
-		System.out.println("aftr:" + A);
+//		System.out.println("after:" + A1);
 		updateTime(A1, v1);
 		updateTime(A1, v2);
 		//System.out.println("D");
@@ -507,10 +515,10 @@ class Solution {
 		
 		TaskSet verifTasks = TaskSet.copyOf(tasks);
 		
-		for (Vehicle v: vehicles){
-			for (Task t = nextTaskVehicle.get(v); t != null; t = nextTaskTask.get(t)){
+		for (Vehicle v : vehicles) {
+			for (Task t = nextTaskVehicle.get(v); t != null; t = nextTaskTask.get(t)) {
 				Boolean removed = verifTasks.remove(t);
-				if(!removed){
+				if (!removed) {
 					//We cannot remove this task, either we already removed the task, or it should not exist
 					return false;
 				}

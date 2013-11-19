@@ -125,16 +125,16 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 		for (Task task : tasks) {
 
-			if (previousTask == null) {
+			/*if (previousTask == null) {
 				//initialSolution.nextTaskVehicle[biggestVehicle, task);
 				initialSolution.nextTaskVehicle[biggestVehicle.id()] = task;
 			} else {
 				initialSolution.nextTaskTask[previousTask.id] = task;
-			}
+			}*/
 			
-			//initialSolution.vehicleTaskMap.put(task, biggestVehicle);
+			/*//initialSolution.vehicleTaskMap.put(task, biggestVehicle);
 			initialSolution.vehicleTaskMap[task.id] = biggestVehicle;
-			//initialSolution.time.put(task, counter);
+			//initialSolution.time.put(task, counter);*/
 			
 			initialSolution.actionsList.get(biggestVehicle).add(new Action(task, "pickup"));
 			initialSolution.actionsList.get(biggestVehicle).add(new Action(task, "delivery"));

@@ -410,38 +410,17 @@ class Solution {
 	double computeCost() {
 		
 		double cost = 0.0;
-		double cost2 = 0.0;
 		
-		/*for (Vehicle v: vehicles){
-			City currentCity = v.homeCity();
-			System.out.println("A");
+		for (Vehicle v: vehicles){
+			City currentCity = v.getCurrentCity();
 			for(Task t = nextTaskVehicle.get(v); t != null; t = nextTaskTask.get(t)){
-				System.out.println("B");
 				cost += (currentCity.distanceTo(t.pickupCity)+t.pickupCity.distanceTo(t.deliveryCity))*v.costPerKm();
 				currentCity = t.deliveryCity;
 			}
-			System.out.println("C");
-		}*/
+			
+		}
 		
-		for (Task ti : tasks) {
-			Task nextTask = nextTaskTask.get(ti);
-			if (nextTask != null) {
-				cost2 += (ti.deliveryCity.distanceTo(nextTask.pickupCity)
-						+ nextTask.pickupCity.distanceTo(nextTask.deliveryCity))
-						* vehicleTaskMap.get(ti).costPerKm();
-			}
-		}
-
-		for (Vehicle vi : vehicles) {
-			Task nextTask = nextTaskVehicle.get(vi);
-			if (nextTask != null) {
-				cost2 += (vi.homeCity().distanceTo(nextTask.pickupCity)
-						+ nextTask.pickupCity.distanceTo(nextTask.deliveryCity))
-						* vi.costPerKm();
-			}
-		}
-
-		return cost2;
+		return cost;
 		
 	}
 
@@ -454,12 +433,10 @@ class Solution {
 
 		/*
 		 * Constraint 1
-		 * nextTask(t) ��� t: the task delivered after
-		 * some task t cannot be the same task.
+		 * nextT ask(t) ̸= t: the task delivered after some task t cannot be the same task;
 		 */
-		for (int i = 0; i < nextTaskTask.size(); i++) {
-			Task currentTask = nextTaskTask.get(i);
-			Task nextTask = nextTaskTask.get(i + 1);
+		for (Task currentTask: nextTaskTask.keySet()) {
+			Task nextTask = nextTaskTask.get(currentTask);
 			if (currentTask != null && currentTask.equals(nextTask)) {
 				System.out.println("Constraint1");
 				return false;
@@ -468,7 +445,7 @@ class Solution {
 
 		/*
 		 * Constraint 2
-		 * nextTask(vk) = tj ��� time(tj) = 1: already explained
+		 * nextTask(vk) = tj ⇒ time(tj) = 1: already explained
 		 */
 		for (Vehicle vk : vehicles) {
 			Task tj = nextTaskVehicle.get(vk);

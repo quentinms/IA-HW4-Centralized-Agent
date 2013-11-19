@@ -410,7 +410,7 @@ class Solution {
 
 		List<Plan> plans = new ArrayList<Plan>();
 
-		for (Vehicle v : vehicles) {
+		/*for (Vehicle v : vehicles) {
 
 			City current = v.homeCity();
 			Plan plan = new Plan(current);
@@ -463,6 +463,33 @@ class Solution {
 				System.out.println("Vehicle "+v.id()+1+"'s cost is "+0);
 			}
 
+		}*/
+		
+		for(Vehicle v: vehicles){
+			List<Action> actions = actionsList.get(v);
+			City current = v.homeCity();
+			Plan plan = new Plan(current);
+			
+			for (Action action: actions){
+				
+				for (City city : current.pathTo(action.city)) {
+					plan.appendMove(city);
+				}
+				
+				if(action.actionType.equals("pickup")){
+					plan.appendPickup(action.task);
+				} else {
+					plan.appendDelivery(action.task);
+				}
+				
+				current = action.city;
+				
+				
+			}
+			
+			plans.add(plan);
+			System.out.println("Vehicle "+v.id()+1+"'s cost is "+(plan.totalDistance()*v.costPerKm()));
+			
 		}
 
 		return plans;

@@ -353,6 +353,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 		
 		for (int i = indexT1+1; i <= A1.actionsList.get(vi).size(); i++){
 			for (int j = indexT2+1; j <= A1.actionsList.get(vi).size(); j++){
+				System.out.println("i = " + i + " and j = " +j);
 				Solution A_tmp = new Solution(A1, A1.debug+"-multi");
 	
 				A_tmp.actionsList.get(vi).add(i, deliveryT2);

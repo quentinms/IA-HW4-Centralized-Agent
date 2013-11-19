@@ -241,11 +241,13 @@ public class CentralizedAgent implements CentralizedBehavior {
 		Solution A1 = new Solution(A, "changingVehicle");
 		Task t = A.nextTaskVehicle.get(v1);
 		//System.out.println("B");
+		System.out.println("befor: "+A.nextTaskVehicle);
 		A1.nextTaskVehicle.put(v1, A1.nextTaskTask.get(t));
 		A1.nextTaskTask.put(t, A1.nextTaskVehicle.get(v2));
 		A1.nextTaskVehicle.put(v2, t);
 		A1.vehicleTaskMap.put(t, v2);
 		//System.out.println("C");
+		System.out.println("aftr:" + A);
 		updateTime(A1, v1);
 		updateTime(A1, v2);
 		//System.out.println("D");

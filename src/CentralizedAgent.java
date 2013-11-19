@@ -252,18 +252,18 @@ public class CentralizedAgent implements CentralizedBehavior {
 		A1.actionsList.get(v1).remove(new Action(t, "pickup"));
 		A1.actionsList.get(v1).remove(new Action(t, "delivery"));
 		
-		System.out.println("Should link v1 to " + A1.nextTaskTask.get(t));
+//		System.out.println("Should link v1 to " + A1.nextTaskTask.get(t));
 		A1.nextTaskVehicle.put(v1, A1.nextTaskTask.get(t));
-		System.out.println("A1.nexttaskvehicle(v1) = " + A1.nextTaskVehicle.get(v1));
-		System.out.println("Should link t to " + A1.nextTaskVehicle.get(v2));
+//		System.out.println("A1.nexttaskvehicle(v1) = " + A1.nextTaskVehicle.get(v1));
+//		System.out.println("Should link t to " + A1.nextTaskVehicle.get(v2));
 		A1.nextTaskTask.put(t, A1.nextTaskVehicle.get(v2));
-		System.out.println("A1.nexttasktask(t) = " + A1.nextTaskTask.get(t));
-		System.out.println("Should link v2 to " + t);
+//		System.out.println("A1.nexttasktask(t) = " + A1.nextTaskTask.get(t));
+//		System.out.println("Should link v2 to " + t);
 		A1.nextTaskVehicle.put(v2, t);
-		System.out.println("nexttaskvehicle(v2) = " + t);
-		System.out.println("Should link t to " + v2);
+//		System.out.println("nexttaskvehicle(v2) = " + t);
+//		System.out.println("Should link t to " + v2);
 		A1.vehicleTaskMap.put(t, v2);
-		System.out.println("nexttaskmap(t) = " + v2);
+//		System.out.println("nexttaskmap(t) = " + v2);
 		//System.out.println("C");
 		
 		A1.actionsList.get(v2).add(0, new Action(t, "pickup"));
@@ -286,8 +286,9 @@ public class CentralizedAgent implements CentralizedBehavior {
 		return solutions;
 	}
 	
-	public Solution changingTaskOrder(Solution A, Vehicle vi, Task t1, Task t2, Task tPre1,  Task tPre2) {
+	public Solution changingTaskOrder(Solution A, Vehicle vi, Task t1, Task t2, Task tPre1, Task tPre2) {
 		Solution A1 = new Solution(A, "changingTaskOrder");
+		System.out.println("At ze buggining, A1.actionsList.get(vi) is " + A1.actionsList.get(vi));
 		
 		Task tPost1 = A1.nextTaskTask.get(t1);
 		Task tPost2 = A1.nextTaskTask.get(t2);
@@ -311,6 +312,19 @@ public class CentralizedAgent implements CentralizedBehavior {
 			A1.nextTaskTask.put(t2, tPost1);
 			A1.nextTaskTask.put(t1, tPost2);
 		}
+		
+		Action pickupT1 = new Action(t1, "pickup");
+		Action pickupT2 = new Action(t2, "pickup");
+		System.out.println("And btw T1 is " + t1 + "and T2 is " + t2);
+		int indexT1 = A1.actionsList.get(vi).indexOf(pickupT1);
+		System.out.println("Youy A1.actionsList.get(vi) is " + A1.actionsList.get(vi));
+		int indexT2 = A1.actionsList.get(vi).indexOf(pickupT2);
+		System.out.println("Yay indexT1 is " + indexT1 + " and uuu indexT2 is " + indexT2);
+		
+		A1.actionsList.get(vi).remove(pickupT1);
+		A1.actionsList.get(vi).remove(pickupT2);
+		A1.actionsList.get(vi).add(indexT1, pickupT2);
+		A1.actionsList.get(vi).add(indexT2, pickupT1);
 		
 		//System.out.println(264);
 		updateTime(A1, vi);
@@ -674,7 +688,8 @@ class Action{
 		return actionType+" Task"+task.id+" in "+city;
 	}
 	
-	public boolean equals(Action action) {
+	public boolean equals(Object obj) {
+		Action action = (Action) obj;
 		return this.task.equals(action.task) && this.actionType.equals(action.actionType);
 	}
 }

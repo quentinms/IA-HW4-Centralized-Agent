@@ -95,11 +95,9 @@ public class CentralizedAgent implements CentralizedBehavior {
 		
 		System.out.println(count);
 
-		if(A != null){
-			return A.getPlan();
-		} else {
-			return Aold.getPlan();
-		}
+		
+		return A.getPlan();
+	
 
 	}
 
@@ -343,6 +341,8 @@ class Solution {
 		this.debug = debug;
 	}
 
+	
+	//TODO Rework the generated plan in order to handle multiple tasks at once.
 	public List<Plan> getPlan() {
 
 		List<Plan> plans = new ArrayList<Plan>();
@@ -405,14 +405,28 @@ class Solution {
 		return plans;
 	}
 
+	
+	//TODO Rework the cost function in order to handle multiple tasks at once.
 	double computeCost() {
 		
 		double cost = 0.0;
-
+		double cost2 = 0.0;
+		
+		/*for (Vehicle v: vehicles){
+			City currentCity = v.homeCity();
+			System.out.println("A");
+			for(Task t = nextTaskVehicle.get(v); t != null; t = nextTaskTask.get(t)){
+				System.out.println("B");
+				cost += (currentCity.distanceTo(t.pickupCity)+t.pickupCity.distanceTo(t.deliveryCity))*v.costPerKm();
+				currentCity = t.deliveryCity;
+			}
+			System.out.println("C");
+		}*/
+		
 		for (Task ti : tasks) {
 			Task nextTask = nextTaskTask.get(ti);
 			if (nextTask != null) {
-				cost += (ti.deliveryCity.distanceTo(nextTask.pickupCity)
+				cost2 += (ti.deliveryCity.distanceTo(nextTask.pickupCity)
 						+ nextTask.pickupCity.distanceTo(nextTask.deliveryCity))
 						* vehicleTaskMap.get(ti).costPerKm();
 			}
@@ -421,13 +435,13 @@ class Solution {
 		for (Vehicle vi : vehicles) {
 			Task nextTask = nextTaskVehicle.get(vi);
 			if (nextTask != null) {
-				cost += (vi.homeCity().distanceTo(nextTask.pickupCity)
+				cost2 += (vi.homeCity().distanceTo(nextTask.pickupCity)
 						+ nextTask.pickupCity.distanceTo(nextTask.deliveryCity))
 						* vi.costPerKm();
 			}
 		}
 
-		return cost;
+		return cost2;
 		
 	}
 
@@ -573,4 +587,10 @@ class Solution {
 
 		return true;
 	}
+	 
+	 @Override
+	public String toString() {
+		return debug+" : "+cost+" | ";
+	}
+	 
 }

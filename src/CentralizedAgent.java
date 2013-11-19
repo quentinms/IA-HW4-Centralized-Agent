@@ -1,10 +1,7 @@
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 
 import logist.agent.Agent;
 import logist.behavior.CentralizedBehavior;
@@ -209,6 +206,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 		for (Task t1 = Aold.nextTaskVehicle.get(vi); t1 != null; t1 = Aold.nextTaskTask.get(t1)) {
 			Task tPre2 = t1;
 			for (Task t2 = Aold.nextTaskTask.get(t1); t2 != null; t2 = Aold.nextTaskTask.get(t2)) {
+				System.out.println("Aold's actionsList: "+Aold.actionsList.get(vi));
 				Solution A = changingTaskOrder(Aold, vi, t1, t2, tPre1, tPre2);
 				if (A.verifyConstraints()) {
 					N.add(A);
@@ -270,13 +268,22 @@ public class CentralizedAgent implements CentralizedBehavior {
 		updateTime(A1, v1);
 		updateTime(A1, v2);
 		
-		for (int index = 1; index < A1.actionsList.get(v2).size(); index++){
+		
+		//We can put it until the end of the array
+		/*for (int index = 1; index <= A1.actionsList.get(v2).size(); index++){
 			Solution A_tmp = new Solution(A1, A1.debug+"-multi");
 			A_tmp.actionsList.get(v2).add(index, new Action(t, "delivery"));
 			A_tmp.cost = A_tmp.computeCost();
 			
 			solutions.add(A_tmp);
-		}
+		}*/
+		
+		Solution A_tmp = new Solution(A1, A1.debug+"-multi");
+		A_tmp.actionsList.get(v2).add(1, new Action(t, "delivery"));
+		A_tmp.cost = A_tmp.computeCost();
+		
+		solutions.add(A_tmp);
+		
 		
 		//System.out.println("C");
 		
@@ -388,8 +395,11 @@ class Solution {
 		nextTaskVehicle = new HashMap<Vehicle, Task>(parentSolution.nextTaskVehicle);
 		time = new HashMap<Task, Integer>(parentSolution.time);
 		vehicleTaskMap = new HashMap<Task, Vehicle>(parentSolution.vehicleTaskMap);
-		actionsList = new HashMap<Vehicle, List<Action>>(parentSolution.actionsList);
-		
+		//actionsList = new HashMap<Vehicle, List<Action>>(parentSolution.actionsList);
+		actionsList = new HashMap<Vehicle, List<Action>>();
+		for(Vehicle v: vehicles){
+			actionsList.put(v, new ArrayList<Action>(parentSolution.actionsList.get(v)));
+		}
 		cost = computeCost();
 		this.debug = debug;
 	}
@@ -446,11 +456,11 @@ class Solution {
 				}
 
 				plans.add(plan);
-				System.out.println("Vehicle "+v.id()+"'s cost is "+(plan.totalDistance()*v.costPerKm()));
+				System.out.println("Vehicle "+v.id()+1+"'s cost is "+(plan.totalDistance()*v.costPerKm()));
 				
 			} else {
 				plans.add(Plan.EMPTY);
-				System.out.println("Vehicle "+v.id()+"'s cost is "+0);
+				System.out.println("Vehicle "+v.id()+1+"'s cost is "+0);
 			}
 
 		}

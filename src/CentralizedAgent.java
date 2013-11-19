@@ -120,8 +120,8 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 		Solution initialSolution = new Solution(tasks, vehicles);
 
-		Task previousTask = null;
-		int counter = 1;
+//		Task previousTask = null;
+//		int counter = 1;
 
 		for (Task task : tasks) {
 
@@ -136,11 +136,11 @@ public class CentralizedAgent implements CentralizedBehavior {
 			initialSolution.vehicleTaskMap[task.id] = biggestVehicle;
 			//initialSolution.time.put(task, counter);*/
 			
-			initialSolution.actionsList[biggestVehicle.id()].add(new Action(task, "pickup"));
-			initialSolution.actionsList[biggestVehicle.id()].add(new Action(task, "delivery"));
+			initialSolution.actionsList.get(biggestVehicle).add(new Action(task, "pickup"));
+			initialSolution.actionsList.get(biggestVehicle).add(new Action(task, "delivery"));
 
-			previousTask = task;
-			counter++;
+			/*previousTask = task;
+			counter++;*/
 
 		}
 
@@ -165,7 +165,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 		// Applying the changing vehicle operator:
 		for (Vehicle vj : vehicles) {
 			if (!vj.equals(vi)) {
-				Task t = Aold.nextTaskVehicle[vi.id()];
+//				Task t = Aold.nextTaskVehicle[vi.id()];
 				//System.out.println(151);
 				//if (t.weight <= vj.capacity()) {
 					List<Solution> A = changingVehicle(Aold, vi, vj);
@@ -204,6 +204,18 @@ public class CentralizedAgent implements CentralizedBehavior {
 			}
 		}*/
 		
+		for (Action a1 : Aold.actionsList.get(vi)) {
+			for (Action a2 : Aold.actionsList.get(vi)) {
+				List<Solution> A = changingTaskOrder(Aold, vi, a1, a2);
+				for(Solution solution: A){
+					if (solution.verifyConstraints()) {
+						N.add(solution);
+					}
+				}
+			}
+		}
+		
+		/*
 		Task tPre1 = null;
 		for (Task t1 = Aold.nextTaskVehicle[vi.id()]; t1 != null; t1 = Aold.nextTaskTask[t1.id]) {
 			Task tPre2 = t1;
@@ -218,7 +230,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 				tPre2 = t2;
 			}
 			tPre1 = t1;
-		}
+		}*/
 		
 		//System.out.println(189);
 		return N;
@@ -247,40 +259,54 @@ public class CentralizedAgent implements CentralizedBehavior {
 		List<Solution> solutions = new ArrayList<Solution>();
 		
 		Solution A1 = new Solution(A, "changingVehicle");
-		Task t = A.nextTaskVehicle[v1.id()];
+		Action action = A.actionsList.get(v1).get(0); // a pickup action
+		Action deliveryAction = new Action(action.task, "delivery");
+//		Task t = A.nextTaskVehicle[v1.id()];
 		//System.out.println("B");
 		
 		//Remove actions corresponding to Task t from V1
-		A1.actionsList[v1.id()].remove(new Action(t, "pickup"));
-		A1.actionsList[v1.id()].remove(new Action(t, "delivery"));
+//		A1.actionsList.get(v1).remove(new Action(t, "pickup"));
+//		A1.actionsList.get(v1).remove(new Action(t, "delivery"));
+		A1.actionsList.get(v1).remove(action);
+		A1.actionsList.get(v1).remove(deliveryAction);
+//		A1.actionsList.get(v1).remove(new Action(t, "delivery"));
 		
 //		System.out.println("Should link v1 to " + A1.nextTaskTask[t));
-		A1.nextTaskVehicle[v1.id()] = A1.nextTaskTask[t.id];
+//		A1.nextTaskVehicle[v1.id()] = A1.nextTaskTask[t.id];
 //		System.out.println("A1.nexttaskvehicle(v1) = " + A1.nextTaskVehicle[v1));
 //		System.out.println("Should link t to " + A1.nextTaskVehicle[v2));
-		A1.nextTaskTask[t.id]= A1.nextTaskVehicle[v2.id()];
+//		A1.nextTaskTask[t.id]= A1.nextTaskVehicle[v2.id()];
 //		System.out.println("A1.nexttasktask(t) = " + A1.nextTaskTask[t));
 //		System.out.println("Should link v2 to " + t);
-		A1.nextTaskVehicle[v2.id()] = t;
+//		A1.nextTaskVehicle[v2.id()] = t;
 //		System.out.println("nexttaskvehicle(v2) = " + t);
 //		System.out.println("Should link t to " + v2);
-		A1.vehicleTaskMap[t.id] = v2;
+//		A1.vehicleTaskMap[t.id] = v2;
 //		System.out.println("nexttaskmap(t) = " + v2);
 		//System.out.println("C");
 		
-		A1.actionsList[v2.id()].add(0, new Action(t, "pickup"));
+//		A1.actionsList.put(v2, new Action(t, "pickup"));
+		A1.actionsList.get(v2).add(0, action);
+//		A1.actionsList[v2.id()].add(0, new Action(t, "pickup"));
 		/*updateTime(A1, v1);
 		updateTime(A1, v2);*/
 		
 		
 		//We can put it until the end of the array
+		for (int i = 1; i < A1.actionsList.size(); i++) {
+			Solution A_tmp = new Solution(A1, A1.debug+"-taskfree-multi");
+			A_tmp.actionsList.get(v2).add(i, deliveryAction);
+			A_tmp.cost = A_tmp.computeCost();
+		}
+		/*
 		for (int index = 1; index <= A1.actionsList[v2.id()].size(); index++){
 			Solution A_tmp = new Solution(A1, A1.debug+"-multi");
 			A_tmp.actionsList[v2.id()].add(index, new Action(t, "delivery"));
 			A_tmp.cost = A_tmp.computeCost();
 			
 			solutions.add(A_tmp);
-		}/*
+		}*/
+		/*
 		
 		Solution A_tmp = new Solution(A1, A1.debug+"-multi");
 		A_tmp.actionsList[v2.id()].add(1, new Action(t, "delivery"));
@@ -297,13 +323,15 @@ public class CentralizedAgent implements CentralizedBehavior {
 		return solutions;
 	}
 	
-	public List<Solution> changingTaskOrder(Solution A, Vehicle vi, Task t1, Task t2, Task tPre1, Task tPre2) {
+	public List<Solution> changingTaskOrder(Solution A, Vehicle vi, Action a1, Action a2) {//, Task tPre1, Task tPre2) {
 		List<Solution> solutions = new ArrayList<Solution>();
+//	public List<Solution> changingTaskOrder(Solution A, Vehicle vi, Task t1, Task t2) {//, Task tPre1, Task tPre2) {
+//		List<Solution> solutions = new ArrayList<Solution>();
 		
 		Solution A1 = new Solution(A, "changingTaskOrder");
 		//System.out.println("At ze buggining, A1.actionsList[vi.id()] is " + A1.actionsList[vi.id()]);
 		
-		Task tPost1 = A1.nextTaskTask[t1.id];
+		/*Task tPost1 = A1.nextTaskTask[t1.id];
 		Task tPost2 = A1.nextTaskTask[t2.id];
 		
 		if (tPost1.equals(t2)) {
@@ -324,24 +352,33 @@ public class CentralizedAgent implements CentralizedBehavior {
 			A1.nextTaskTask[tPre2.id] =  t1;
 			A1.nextTaskTask[t2.id] = tPost1;
 			A1.nextTaskTask[t1.id] = tPost2;
-		}
+		}*/
 		
 		//updateTime(A1, vi);
 		
-		Action pickupT1 = new Action(t1, "pickup");
-		Action pickupT2 = new Action(t2, "pickup");
+		
+		
+//		Action pickupT1 = new Action(t1, "pickup");
+//		Action pickupT2 = new Action(t2, "pickup");
 		//System.out.println("And btw T1 is " + t1 + "and T2 is " + t2);
-		int indexT1 = A1.actionsList[vi.id()].indexOf(pickupT1);
+//		int indexT1 = A1.actionsList[vi.id()].indexOf(a1);
+		int indexT1 = A1.actionsList.get(vi).indexOf(a1);
 		//System.out.println("Youy A1.actionsList[vi.id()] is " + A1.actionsList[vi.id()]);
-		int indexT2 = A1.actionsList[vi.id()].indexOf(pickupT2);
+//		int indexT2 = A1.actionsList[vi.id()].indexOf(a2);
+		int indexT2 = A1.actionsList.get(vi).indexOf(a2);
 		//System.out.println("Yay indexT1 is " + indexT1 + " and uuu indexT2 is " + indexT2);
 		
-		A1.actionsList[vi.id()].remove(pickupT1);
-		A1.actionsList[vi.id()].remove(pickupT2);
-		A1.actionsList[vi.id()].add(indexT1, pickupT2);
-		A1.actionsList[vi.id()].add(indexT2, pickupT1);
-		
-		
+		A1.actionsList.get(vi).remove(a1);
+		A1.actionsList.get(vi).remove(a2);
+		A1.actionsList.get(vi).add(indexT1, a1);
+		A1.actionsList.get(vi).add(indexT2, a2);
+		/*
+		A1.actionsList[vi.id()].remove(a1);
+		A1.actionsList[vi.id()].remove(a2);
+		A1.actionsList[vi.id()].add(indexT1, a1);
+		A1.actionsList[vi.id()].add(indexT2, a2);
+		*/
+		/*
 		Action deliveryT1 = new Action(t1, "delivery");
 		Action deliveryT2 = new Action(t2, "delivery");
 		//System.out.println("And btw T1 is " + t1 + "and T2 is " + t2);
@@ -371,7 +408,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 			}	
 		}
 		
-		
+		*/
 		
 		//System.out.println(264);
 		
@@ -413,8 +450,8 @@ class Solution {
 	//HashMap<Task, Integer> time;
 	//HashMap<Task, Vehicle> vehicleTaskMap;
 	Vehicle[] vehicleTaskMap;
-	//HashMap<Vehicle, List<Action>> actionsList;
-	ArrayList[] actionsList;
+	HashMap<Vehicle, List<Action>> actionsList;
+//	ArrayList[] actionsList;
 
 	Double cost;
 	String debug;
@@ -428,9 +465,9 @@ class Solution {
 		//time = new HashMap<Task, Integer>();
 		vehicleTaskMap = new Vehicle[tasks.size()];//new HashMap<Task, Vehicle>();
 		//TODO
-		actionsList = new ArrayList[vehicles.size()];//new HashMap<Vehicle, List<Action>>();
+		actionsList = new HashMap<Vehicle, List<Action>>();
 		for(Vehicle v: vehicles){
-			actionsList[v.id()]= new ArrayList<Action>();
+			actionsList.put(v, new ArrayList<Action>());
 		}
 		Solution.tasks = tasks;
 		Solution.vehicles = vehicles;
@@ -441,9 +478,9 @@ class Solution {
 		nextTaskVehicle = parentSolution.nextTaskVehicle.clone();//new HashMap<Vehicle, Task>(parentSolution.nextTaskVehicle);
 		//time = new HashMap<Task, Integer>(parentSolution.time);
 		vehicleTaskMap = parentSolution.vehicleTaskMap.clone() ; //new HashMap<Task, Vehicle>(parentSolution.vehicleTaskMap);
-		actionsList = new ArrayList[vehicles.size()];//new HashMap<Vehicle, List<Action>>();
+		actionsList = new HashMap<Vehicle, List<Action>>();
 		for(Vehicle v: vehicles){
-			actionsList[v.id()]= new ArrayList<Action>(parentSolution.actionsList[v.id()]);
+			actionsList.put(v, new ArrayList<Action>(parentSolution.actionsList.get(v)));
 		}
 		cost = computeCost();
 		this.debug = debug;
@@ -456,7 +493,7 @@ class Solution {
 		List<Plan> plans = new ArrayList<Plan>();
 		
 		for(Vehicle v: vehicles){
-			List<Action> actions = actionsList[v.id()];
+			List<Action> actions = actionsList.get(v);
 			City current = v.homeCity();
 			Plan plan = new Plan(current);
 			
@@ -499,7 +536,7 @@ class Solution {
 				currentCity = t.deliveryCity;
 			}*/
 			
-			for(Object act: actionsList[v.id()]){
+			for (Object act: actionsList.get(v)) {
 				Action action = (Action)act;
 				cost+=currentCity.distanceTo(action.city)*v.costPerKm();
 				currentCity = action.city;
@@ -651,7 +688,7 @@ class Solution {
 		
 		for(Vehicle v: vehicles){
 			int carriedWeight = 0;
-			for(Object act: actionsList[v.id()]){
+			for(Object act: actionsList.get(v)) {
 				Action action = (Action)act;
 				if(action.actionType.equals("pickup")){
 					carriedWeight += action.task.weight;
@@ -674,7 +711,7 @@ class Solution {
 		for(Vehicle v: vehicles){
 			ArrayList<Task> stack = new ArrayList<Task>();
 			
-			for(Object act: actionsList[v.id()]){
+			for(Object act: actionsList.get(v)){
 				Action action = (Action)act;
 				if(action.actionType.equals("pickup")){
 					stack.add(action.task);

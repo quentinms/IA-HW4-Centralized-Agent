@@ -44,7 +44,9 @@ public class CentralizedTemplate implements CentralizedBehavior {
 //		System.out.println("Agent " + agent.id() + " has tasks " + tasks);
 
 		Plan planVehicle1 = naivePlan(vehicles.get(0), tasks);
-
+		
+		System.out.println(planVehicle1.totalDistance()*vehicles.get(0).costPerKm());
+		
 		List<Plan> plans = new ArrayList<Plan>();
 		plans.add(planVehicle1);
 		while (plans.size() < vehicles.size())

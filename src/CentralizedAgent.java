@@ -13,10 +13,6 @@ import logist.task.TaskSet;
 import logist.topology.Topology;
 import logist.topology.Topology.City;
 
-/**
- * A very simple auction agent that assigns all tasks to its first vehicle and
- * handles them sequentially.
- */
 @SuppressWarnings("unused")
 public class CentralizedAgent implements CentralizedBehavior {
 
@@ -37,59 +33,36 @@ public class CentralizedAgent implements CentralizedBehavior {
 		return centralizedPlan(vehicles, tasks);
 	}
 
-	private Plan naivePlan(Vehicle vehicle, TaskSet tasks) {
-		City current = vehicle.getCurrentCity();
-		Plan plan = new Plan(current);
-
-		for (Task task : tasks) {
-			// move: current city => pickup location
-			for (City city : current.pathTo(task.pickupCity))
-				plan.appendMove(city);
-
-			plan.appendPickup(task);
-
-			// move: pickup location => delivery location
-			for (City city : task.path())
-				plan.appendMove(city);
-
-			plan.appendDelivery(task);
-
-			// set current city
-			current = task.deliveryCity;
-		}
-		return plan;
-	}
-
 	private List<Plan> centralizedPlan(List<Vehicle> vehicles, TaskSet tasks) {
 
 		Solution Aold = new Solution(vehicles);
 		Aold.cost = Double.POSITIVE_INFINITY;
 		
+		//The biggest vehicle handles tasks sequentially
 		Solution A = selectInitialSolution(vehicles, tasks);
+		
+		if(!A.verifyConstraints()){
+			System.err.println("The tasks are too big!");
+			System.exit(-1);
+		}
 		
 		List<Solution> N = null;
 
 		int count = 0;
+		//We continue while we improve
 		while (count < 10000 && A.cost < Aold.cost) {
+			Aold = new Solution(A);
 			
-			System.out.println("Creating new solution");
-			Aold = new Solution(A, "cloning");
-			
-			System.out.println("Choosing neighbours");
 			N = chooseNeighbours(Aold, tasks, vehicles);
+			//We also add the old state in order to prevent NullPointerExceptions if no neighbour is better
+			N.add(Aold);
 			
-			// TODO Should Aold be in N?
-			System.out.println("Choosing the local best");
+			//Select the best solution among the neighbours (and the current solution)
 			A = localChoice(N);
-			System.out.println("A:"+A.debug);
 			
-			System.out.println("Next round");
-			System.out.println();
-
+			System.out.println("Iter "+count+" : "+A.cost);
 			count++;
 		}
-		
-		System.out.println(A.cost);
 		
 		return A.getPlan();
 	
@@ -98,7 +71,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 	/**
 	 * As an initial solution, we just take the vehicle with biggest capacity
-	 * and assign all the tasks to it.
+	 * and assign all the tasks to it, sequentially.
 	 * @param vehicles the list of vehicles
 	 * @param tasks the liste of tasks
 	 * @return an initial solution
@@ -121,7 +94,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 			initialSolution.actionsList.get(biggestVehicle).add(new Action(task, "delivery"));
 		}
 
-		initialSolution.cost = initialSolution.computeCost();
+		initialSolution.computeCost();
 
 		return initialSolution;
 		
@@ -130,30 +103,27 @@ public class CentralizedAgent implements CentralizedBehavior {
 	private List<Solution> chooseNeighbours(Solution Aold, TaskSet tasks, List<Vehicle> vehicles) {
 
 		List<Solution> N = new ArrayList<Solution>();
-		Vehicle vi = null;
 		
-		while (vi == null || Aold.actionsList.get(vi).isEmpty()) {
-			vi = vehicles.get((int) (Math.random() * vehicles.size()));
-		}
-
-		// Applying the changing vehicle operator:
-		for (Vehicle vj : vehicles) {
-			if (!vj.equals(vi)) {
-				List<Solution> A = changingVehicle(Aold, vi, vj);
-				for (Solution solution: A) {
-					if (solution.verifyConstraints()) {
-						N.add(solution);
+		for (Vehicle vi: vehicles){
+			if (!Aold.actionsList.get(vi).isEmpty()){
+				// Applying the changing vehicle operator:
+				for (Vehicle vj : vehicles) {
+					if (!vj.equals(vi)) {
+						List<Solution> A = changingVehicle(Aold, vi, vj);
+						N.addAll(A);
 					}
 				}
-			}
-		}
-		
-		for (Action a1 : Aold.actionsList.get(vi)) {
-			for (Action a2 : Aold.actionsList.get(vi)) {
-				if (!a1.equals(a2)) {
-					Solution A = changingTaskOrder(Aold, vi, a1, a2);
-					if (A.verifyConstraints()) {
-						N.add(A);
+				
+				//Changing the actions order, for all possible combinations of different actions
+				for (Action a1 : Aold.actionsList.get(vi)) {
+					for (Action a2 : Aold.actionsList.get(vi)) {
+						if (!a1.equals(a2)) {
+							Solution A = changingTaskOrder(Aold, vi, a1, a2);
+							//We only keep it if it is better than the current solution and if it satisfies the constraints
+							if (A.verifyConstraints() && A.cost < Aold.cost) {
+								N.add(A);
+							}
+						}
 					}
 				}
 			}
@@ -163,55 +133,83 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 	}
 
+	/*
+	 * We choose the best local solution. If multiple solution are equally good, we choose one at random.
+	 * */
 	private Solution localChoice(List<Solution> N) {
 
-		Solution bestSolution = null;
+		List<Solution> bestSolutions = new ArrayList<Solution>();
 		double leastCost = Double.POSITIVE_INFINITY;
 
 		for (Solution solution : N) {
 			
 			if (solution.cost < leastCost) {
 				leastCost = solution.cost;
-				bestSolution = solution;
+				bestSolutions = new ArrayList<Solution>();
+				bestSolutions.add(solution);
+				
+			} else if (solution.cost == leastCost){
+				bestSolutions.add(solution);
 			}
 		}
-		
-		System.out.println(bestSolution.cost);
-		return bestSolution;
+	
+		return bestSolutions.get((int)(Math.random()*bestSolutions.size()));
 		
 	}
-
+	
+	/* We generate all the neighbourgs by giving one task handled by v1 and giving it to v2
+	 * */
+	
 	public List<Solution> changingVehicle(Solution A, Vehicle v1, Vehicle v2) {
 		List<Solution> solutions = new ArrayList<Solution>();
 		
-		Solution A1 = new Solution(A, "changingVehicle");
-		Action pickupAction = A.actionsList.get(v1).get(0); // a pickup action
-		Action deliveryAction = new Action(pickupAction.task, "delivery");
-		A1.actionsList.get(v1).remove(pickupAction);
-		A1.actionsList.get(v1).remove(deliveryAction);
-		A1.actionsList.get(v2).add(0, pickupAction);
-		
-		//We can put it until the end of the array
-		for (int i = 1; i < A1.actionsList.get(v2).size(); i++) {
-			Solution A_tmp = new Solution(A1, A1.debug+"-taskfree-multi");
-			A_tmp.actionsList.get(v2).add(i, deliveryAction);
-			A_tmp.cost = A_tmp.computeCost();
+		//We can give any task of v1 to v2
+		for(int actionIndex = 0; actionIndex < A.actionsList.get(v1).size(); actionIndex++){
+			Solution A1 = new Solution(A);
 			
-			solutions.add(A_tmp);
+			Action pickupAction = A.actionsList.get(v1).get(actionIndex); // a pickup action
+			if(pickupAction.actionType.equals("pickup")){
+				Action deliveryAction = new Action(pickupAction.task, "delivery");
+				
+				//We remove the actions from v1
+				A1.actionsList.get(v1).remove(pickupAction);
+				A1.actionsList.get(v1).remove(deliveryAction);
+				
+				
+				//And then put them anywhere in the actionsList of v2
+				for (int i = 0; i <= A1.actionsList.get(v2).size(); i++) {
+					//We have a '+1' because once the pickup is inserted, the size is increased.
+					for (int j = 0; j <= A1.actionsList.get(v2).size()+1; j++) {
+						Solution A_tmp = new Solution(A1);
+						A_tmp.actionsList.get(v2).add(i, pickupAction);
+						A_tmp.actionsList.get(v2).add(j, deliveryAction);
+						A_tmp.computeCost();
+						
+						
+						//As before, we only add if it is better and verifies the constraints
+						if(A_tmp.verifyConstraints() && A_tmp.cost < A.cost){
+							solutions.add(A_tmp);
+						}
+					
+					}
+				}
+			}
 		}
-
 		return solutions;
 	}
 	
+	
+	//We exchange the order of two given tasks
 	public Solution changingTaskOrder(Solution A, Vehicle vi, Action a1, Action a2) {
 		
-		Solution A1 = new Solution(A, "changingTaskOrder");
+		Solution A1 = new Solution(A);
 		int indexT1 = A1.actionsList.get(vi).indexOf(a1);
 		int indexT2 = A1.actionsList.get(vi).indexOf(a2);
 		
 		A1.actionsList.get(vi).remove(a1);
 		A1.actionsList.get(vi).remove(a2);
 		
+		// We have to insert the smallest index first, otherwise there are some out-of-bound issues.
 		if(indexT1 < indexT2){
 			A1.actionsList.get(vi).add(indexT1, a2);
 			A1.actionsList.get(vi).add(indexT2, a1);
@@ -220,7 +218,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 			A1.actionsList.get(vi).add(indexT1, a2);
 		}
 		
-		A1.cost = A1.computeCost();
+		A1.computeCost();
 		return A1;
 
 	}
@@ -229,10 +227,9 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 class Solution {
 
+	//Used to store the actions of each vehicle
 	protected HashMap<Vehicle, List<Action>> actionsList;
-
 	protected Double cost;
-	protected String debug;
 
 	private static List<Vehicle> vehicles;
 
@@ -244,16 +241,15 @@ class Solution {
 		Solution.vehicles = vehicles;
 	}
 
-	public Solution(Solution parentSolution, String debug) {
+	public Solution(Solution parentSolution) {
 		actionsList = new HashMap<Vehicle, List<Action>>();
 		for (Vehicle vehicle : vehicles) {
 			actionsList.put(vehicle, new ArrayList<Action>(parentSolution.actionsList.get(vehicle)));
 		}
-		cost = computeCost();
-		this.debug = debug;
+		computeCost();
 	}
 
-	
+	//Genereate the Plan for each vehicle for this solution
 	public List<Plan> getPlan() {
 
 		List<Plan> plans = new ArrayList<Plan>();
@@ -284,8 +280,7 @@ class Solution {
 			
 			plans.add(plan);
 			
-			System.out.println("Vehicle " + (vehicle.id() + 1) + "'s cost is " + (plan.totalDistance() * vehicle.costPerKm()));
-			System.out.println("Vehicle " + (vehicle.id() + 1) + "'s plan is \n" + plan.toString());
+			System.out.println("Vehicle " + (vehicle.id() + 1) + "'s cost is " + (plan.totalDistance() * vehicle.costPerKm())+" ("+ plan+")");
 			
 		}
 
@@ -293,18 +288,18 @@ class Solution {
 	}
 
 	
-	double computeCost() {
-		double cost = 0.0;
+	void computeCost() {
+		double newCost = 0.0;
 		
 		for (Vehicle vehicle : vehicles) {
 			City currentCity = vehicle.homeCity();
 			for (Action action : actionsList.get(vehicle)) {
-				cost += currentCity.distanceTo(action.city) * vehicle.costPerKm();
+				newCost += currentCity.distanceTo(action.city) * vehicle.costPerKm();
 				currentCity = action.city;
 			}
 		}
 		
-		return cost;
+		this.cost = newCost;
 	}
 
 	/**
@@ -314,9 +309,8 @@ class Solution {
 	 Boolean verifyConstraints() {
 
 		/*
-		 * Constraint 7
-		 * the capacity of a vehicle cannot be exceeded:
-		 * if load(ti) > capacity(vk) ⇒ vehicle(ti) ≠ vk
+		 * Constraint 1
+		 * We only accept if the vehicle can carry the tasks, at any moment
 		 */		
 		for (Vehicle vehicle : vehicles) {
 			
@@ -331,7 +325,7 @@ class Solution {
 				}
 	
 				if (carriedWeight > vehicle.capacity()) {
-					System.out.println("[Info] Constraint 7 not met.");
+					//System.out.println("[Info] Constraint 7 not met.");
 					return false;
 				}
 				
@@ -341,7 +335,7 @@ class Solution {
 		
 		
 		/*
-		 * Constraint 8
+		 * Constraint 2
 		 * Pickups actions of a task must be before corresponding deliveries
 		 */
 		for (Vehicle vehicle : vehicles) {
@@ -356,13 +350,13 @@ class Solution {
 					stack.add(action.task);
 				} else {
 					if (!stack.remove(action.task)) {
-						System.out.println("[Info] Constraint 8 " + debug + " - " + action.task + " not met.");
+						//System.out.println("[Info] Constraint 8 " + debug + " - " + action.task + " not met.");
 						return false;
 					}
 				}
 				
 			}
-			
+			//All picked up tasks must be delivered
 			if (!stack.isEmpty()) return false;
 			
 		}
@@ -372,7 +366,13 @@ class Solution {
 	 
 	@Override
 	public String toString() {
-		return debug + " : " + cost + " | ";
+		String s = "";
+		
+		for (Vehicle v: vehicles){
+			s = s + " \n "+ actionsList.get(v);
+		}
+		
+		return s;
 	}
 	 
 }

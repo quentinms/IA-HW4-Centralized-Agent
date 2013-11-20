@@ -379,24 +379,23 @@ class Solution {
 
 class Action {
 	
-	// TODO privatiser/publiquiser
 	protected Task task;
 	protected String actionType;
 	protected City city;
 	
-	public Action(Task t, String type) {
-		task = t;
+	public Action(Task task, String type) {
+		this.task = task;
 		actionType = type;
-		if(actionType.equals("pickup")){
-			city = task.pickupCity;
+		if (actionType.equals("pickup")) {
+			city = this.task.pickupCity;
 		} else {
-			city = task.deliveryCity;
+			city = this.task.deliveryCity;
 		}
 	}
 	
 	@Override
 	public String toString() {
-		return actionType+" Task"+task.id+" in "+city;
+		return actionType + " Task" + task.id + " in " + city;
 	}
 	
 	public boolean equals(Object obj) {

@@ -111,23 +111,16 @@ public class CentralizedAgent implements CentralizedBehavior {
 				// Applying the changing vehicle operator:
 				for (Vehicle vj : vehicles) {
 					if (!vj.equals(vi)) {
-						List<Solution> A = changingVehicle(Aold, vi, vj);
-						N.addAll(A);
+						List<Solution> As = changingVehicle(Aold, vi, vj);
+						N.addAll(As);
 					}
 				}
 				
 				//Changing the actions order, for all possible combinations of different actions
-				for (Action a1 : Aold.actionsList.get(vi)) {
-					for (Action a2 : Aold.actionsList.get(vi)) {
-						if (!a1.equals(a2)) {
-							Solution A = changingTaskOrder(Aold, vi, a1, a2);
-							//We only keep it if it is better than the current solution and if it satisfies the constraints
-							if (A.verifyConstraints() && A.cost < Aold.cost) {
-								N.add(A);
-							}
-						}
-					}
-				}
+				
+				List<Solution> As = changingTaskOrder(Aold, vi);
+				N.addAll(As);
+						
 			}
 		}
 
@@ -202,26 +195,40 @@ public class CentralizedAgent implements CentralizedBehavior {
 	
 	
 	//We exchange the order of two given tasks
-	public Solution changingTaskOrder(Solution A, Vehicle vi, Action a1, Action a2) {
+	public List<Solution> changingTaskOrder(Solution A, Vehicle vi) {
 		
-		Solution A1 = new Solution(A);
-		int indexT1 = A1.actionsList.get(vi).indexOf(a1);
-		int indexT2 = A1.actionsList.get(vi).indexOf(a2);
+		List<Solution> solutions = new ArrayList<Solution>();
 		
-		A1.actionsList.get(vi).remove(a1);
-		A1.actionsList.get(vi).remove(a2);
-		
-		// We have to insert the smallest index first, otherwise there are some out-of-bound issues.
-		if(indexT1 < indexT2){
-			A1.actionsList.get(vi).add(indexT1, a2);
-			A1.actionsList.get(vi).add(indexT2, a1);
-		} else {
-			A1.actionsList.get(vi).add(indexT2, a1);
-			A1.actionsList.get(vi).add(indexT1, a2);
+		for (Action a1 : A.actionsList.get(vi)) {
+			for (Action a2 : A.actionsList.get(vi)) {
+				if (!a1.equals(a2)) {
+					Solution A_tmp = new Solution(A);
+					int indexT1 = A_tmp.actionsList.get(vi).indexOf(a1);
+					int indexT2 = A_tmp.actionsList.get(vi).indexOf(a2);
+					
+					A_tmp.actionsList.get(vi).remove(a1);
+					A_tmp.actionsList.get(vi).remove(a2);
+					
+					// We have to insert the smallest index first, otherwise there are some out-of-bound issues.
+					if(indexT1 < indexT2){
+						A_tmp.actionsList.get(vi).add(indexT1, a2);
+						A_tmp.actionsList.get(vi).add(indexT2, a1);
+					} else {
+						A_tmp.actionsList.get(vi).add(indexT2, a1);
+						A_tmp.actionsList.get(vi).add(indexT1, a2);
+					}
+					
+					A_tmp.computeCost();
+					
+					//We only keep it if it is better than the current solution and if it satisfies the constraints
+					if (A_tmp.verifyConstraints() && A_tmp.cost < A.cost) {
+						solutions.add(A_tmp);
+					}
+			
+				}
+			}
 		}
-		
-		A1.computeCost();
-		return A1;
+		return solutions;
 
 	}
 

@@ -35,7 +35,9 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 	private List<Plan> centralizedPlan(List<Vehicle> vehicles, TaskSet tasks) {
 
-		Solution Aold = new Solution(vehicles);
+		Solution.vehicles = vehicles;
+		Solution.tasks = tasks;
+		Solution Aold = new Solution();
 		Aold.cost = Double.POSITIVE_INFINITY;
 		
 		//The biggest vehicle handles tasks sequentially
@@ -87,7 +89,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 			}
 		}
 
-		Solution initialSolution = new Solution(vehicles);
+		Solution initialSolution = new Solution();
 
 		for (Task task : tasks) {
 			initialSolution.actionsList.get(biggestVehicle).add(new Action(task, "pickup"));
@@ -231,14 +233,15 @@ class Solution {
 	protected HashMap<Vehicle, List<Action>> actionsList;
 	protected Double cost;
 
-	private static List<Vehicle> vehicles;
+	public static List<Vehicle> vehicles;
+	public static TaskSet tasks;
+	
 
-	public Solution(List<Vehicle> vehicles) {
+	public Solution() {
 		actionsList = new HashMap<Vehicle, List<Action>>();
 		for (Vehicle vehicle : vehicles) {
 			actionsList.put(vehicle, new ArrayList<Action>());
 		}
-		Solution.vehicles = vehicles;
 	}
 
 	public Solution(Solution parentSolution) {
@@ -336,8 +339,11 @@ class Solution {
 		
 		/*
 		 * Constraint 2
-		 * Pickups actions of a task must be before corresponding deliveries
+		 * Pickups actions of a task must be before corresponding deliveries, all picked up tasks must be delivered and all tasks available must be picked up.
 		 */
+		
+		TaskSet availableTasks = TaskSet.copyOf(tasks);
+		
 		for (Vehicle vehicle : vehicles) {
 			
 			ArrayList<Task> stack = new ArrayList<Task>();
@@ -348,6 +354,7 @@ class Solution {
 				
 				if (action.actionType.equals("pickup")) {
 					stack.add(action.task);
+					availableTasks.remove(action.task);
 				} else {
 					if (!stack.remove(action.task)) {
 						//System.out.println("[Info] Constraint 8 " + debug + " - " + action.task + " not met.");
@@ -359,6 +366,10 @@ class Solution {
 			//All picked up tasks must be delivered
 			if (!stack.isEmpty()) return false;
 			
+		}
+		
+		if(!availableTasks.isEmpty()){
+			return false;
 		}
 
 		return true;

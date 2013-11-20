@@ -207,11 +207,9 @@ public class CentralizedAgent implements CentralizedBehavior {
 		
 		for (Action a1 : Aold.actionsList.get(vi)) {
 			for (Action a2 : Aold.actionsList.get(vi)) {
-				List<Solution> A = changingTaskOrder(Aold, vi, a1, a2);
-				for(Solution solution: A){
-					if (solution.verifyConstraints()) {
-						N.add(solution);
-					}
+				Solution A = changingTaskOrder(Aold, vi, a1, a2);
+					if (A.verifyConstraints()) {
+						N.add(A);
 				}
 			}
 		}
@@ -242,6 +240,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 		Solution bestSolution = null;
 		double leastCost = Double.POSITIVE_INFINITY;
+		
 
 		for (Solution solution : N) {
 			
@@ -298,6 +297,8 @@ public class CentralizedAgent implements CentralizedBehavior {
 			Solution A_tmp = new Solution(A1, A1.debug+"-taskfree-multi");
 			A_tmp.actionsList.get(v2).add(i, deliveryAction);
 			A_tmp.cost = A_tmp.computeCost();
+			
+			solutions.add(A_tmp);
 		}
 		/*
 		for (int index = 1; index <= A1.actionsList[v2.id()].size(); index++){
@@ -324,7 +325,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 		return solutions;
 	}
 	
-	public List<Solution> changingTaskOrder(Solution A, Vehicle vi, Action a1, Action a2) {//, Task tPre1, Task tPre2) {
+	public Solution changingTaskOrder(Solution A, Vehicle vi, Action a1, Action a2) {//, Task tPre1, Task tPre2) {
 		List<Solution> solutions = new ArrayList<Solution>();
 //	public List<Solution> changingTaskOrder(Solution A, Vehicle vi, Task t1, Task t2) {//, Task tPre1, Task tPre2) {
 //		List<Solution> solutions = new ArrayList<Solution>();
@@ -422,8 +423,10 @@ public class CentralizedAgent implements CentralizedBehavior {
 		
 		
 		A1.cost = A1.computeCost();
+		
+		
 		//System.out.println(268);
-		return solutions;
+		return A1;
 
 	}
 

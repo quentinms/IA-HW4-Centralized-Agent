@@ -171,7 +171,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 					List<Solution> A = changingVehicle(Aold, vi, vj);
 					
 					for(Solution solution: A){
-						System.out.println(solution);
+						//System.out.println(solution);
 						if (solution.verifyConstraints()) {
 							N.add(solution);
 						}
@@ -207,9 +207,11 @@ public class CentralizedAgent implements CentralizedBehavior {
 		
 		for (Action a1 : Aold.actionsList.get(vi)) {
 			for (Action a2 : Aold.actionsList.get(vi)) {
-				Solution A = changingTaskOrder(Aold, vi, a1, a2);
-					if (A.verifyConstraints()) {
-						N.add(A);
+				if(!a1.equals(a2)){
+					Solution A = changingTaskOrder(Aold, vi, a1, a2);
+						if (A.verifyConstraints()) {
+							N.add(A);
+					}
 				}
 			}
 		}
@@ -526,8 +528,8 @@ class Solution {
 			}
 			
 			plans.add(plan);
-			System.out.println("Vehicle "+v.id()+1+"'s cost is "+(plan.totalDistance()*v.costPerKm()));
-			
+			System.out.println("Vehicle "+(v.id()+1)+"'s cost is "+(plan.totalDistance()*v.costPerKm()));
+			System.out.println("Vehicle "+(v.id()+1)+"'s plan is \n"+plan.toString());
 		}
 
 		return plans;
@@ -547,8 +549,7 @@ class Solution {
 				currentCity = t.deliveryCity;
 			}*/
 			
-			for (Object act: actionsList.get(v)) {
-				Action action = (Action)act;
+			for (Action action: actionsList.get(v)) {
 				cost+=currentCity.distanceTo(action.city)*v.costPerKm();
 				currentCity = action.city;
 			}
@@ -699,8 +700,7 @@ class Solution {
 		
 		for(Vehicle v: vehicles){
 			int carriedWeight = 0;
-			for(Object act: actionsList.get(v)) {
-				Action action = (Action)act;
+			for(Action action: actionsList.get(v)) {
 				if(action.actionType.equals("pickup")){
 					carriedWeight += action.task.weight;
 				} else {

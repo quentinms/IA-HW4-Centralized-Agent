@@ -43,26 +43,28 @@ public class CentralizedAgent implements CentralizedBehavior {
 		//The biggest vehicle handles tasks sequentially
 		Solution A = selectInitialSolution(vehicles, tasks);
 		
-		if(!A.verifyConstraints()){
-			System.err.println("The tasks are too big!");
+		if (!A.verifyConstraints()) {
+			System.err.println("At least one task is too big for the biggest capacity's vehicle!");
 			System.exit(-1);
 		}
 		
 		List<Solution> N = null;
 
 		int count = 0;
+		
 		//We continue while we improve
 		while (count < 10000 && A.cost < Aold.cost) {
 			Aold = new Solution(A);
 			
 			N = chooseNeighbours(Aold, tasks, vehicles);
+			
 			//We also add the old state in order to prevent NullPointerExceptions if no neighbour is better
 			N.add(Aold);
 			
 			//Select the best solution among the neighbours (and the current solution)
 			A = localChoice(N);
 			
-			System.out.println("Iter "+count+" : "+A.cost);
+			System.out.println("[Info] Iter " + count + " : " + A.cost);
 			count++;
 		}
 		
@@ -106,9 +108,11 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 		List<Solution> N = new ArrayList<Solution>();
 		
-		for (Vehicle vi: vehicles){
-			if (!Aold.actionsList.get(vi).isEmpty()){
-				// Applying the changing vehicle operator:
+		for (Vehicle vi : vehicles) {
+			
+			if (!Aold.actionsList.get(vi).isEmpty()) {
+				
+				// Applying the changing vehicle operation:
 				for (Vehicle vj : vehicles) {
 					if (!vj.equals(vi)) {
 						List<Solution> As = changingVehicle(Aold, vi, vj);
@@ -116,12 +120,12 @@ public class CentralizedAgent implements CentralizedBehavior {
 					}
 				}
 				
-				//Changing the actions order, for all possible combinations of different actions
-				
+				// Applying the changing task order operation:
 				List<Solution> As = changingTaskOrder(Aold, vi);
 				N.addAll(As);
 						
 			}
+			
 		}
 
 		return N;
@@ -129,8 +133,8 @@ public class CentralizedAgent implements CentralizedBehavior {
 	}
 
 	/*
-	 * We choose the best local solution. If multiple solution are equally good, we choose one at random.
-	 * */
+	 * We choose the best local solution. If multiple solutions are equally good, we choose one at random.
+	 */
 	private Solution localChoice(List<Solution> N) {
 
 		List<Solution> bestSolutions = new ArrayList<Solution>();
@@ -143,58 +147,71 @@ public class CentralizedAgent implements CentralizedBehavior {
 				bestSolutions = new ArrayList<Solution>();
 				bestSolutions.add(solution);
 				
-			} else if (solution.cost == leastCost){
+			} else if (solution.cost == leastCost) {
 				bestSolutions.add(solution);
 			}
 		}
 	
-		return bestSolutions.get((int)(Math.random()*bestSolutions.size()));
+		return bestSolutions.get((int) (Math.random() * bestSolutions.size()));
 		
 	}
 	
-	/* We generate all the neighbourgs by giving one task handled by v1 and giving it to v2
-	 * */
+	/* 
+	 * We generate all the neighbours by giving one task handled by v1 and giving it to v2
+	 */
 	
 	public List<Solution> changingVehicle(Solution A, Vehicle v1, Vehicle v2) {
+		
 		List<Solution> solutions = new ArrayList<Solution>();
 		
 		//We can give any task of v1 to v2
-		for(int actionIndex = 0; actionIndex < A.actionsList.get(v1).size(); actionIndex++){
+		for(int actionIndex = 0; actionIndex < A.actionsList.get(v1).size(); actionIndex++) {
+			
 			Solution A1 = new Solution(A);
 			
-			Action pickupAction = A.actionsList.get(v1).get(actionIndex); // a pickup action
-			if(pickupAction.actionType.equals("pickup")){
+			Action pickupAction = A.actionsList.get(v1).get(actionIndex);
+			
+			if (pickupAction.actionType.equals("pickup")) { // a pickup action
+				
 				Action deliveryAction = new Action(pickupAction.task, "delivery");
 				
-				//We remove the actions from v1
+				// We remove the actions from v1
 				A1.actionsList.get(v1).remove(pickupAction);
 				A1.actionsList.get(v1).remove(deliveryAction);
 				
-				
-				//And then put them anywhere in the actionsList of v2
+				// And then put them anywhere in the actionsList of v2
 				for (int i = 0; i <= A1.actionsList.get(v2).size(); i++) {
-					//We have a '+1' because once the pickup is inserted, the size is increased.
-					for (int j = 0; j <= A1.actionsList.get(v2).size()+1; j++) {
+					
+					// We have a '+1' because once the pickup is inserted, the size is increased.
+					for (int j = 0; j <= A1.actionsList.get(v2).size() + 1; j++) {
+						
 						Solution A_tmp = new Solution(A1);
 						A_tmp.actionsList.get(v2).add(i, pickupAction);
 						A_tmp.actionsList.get(v2).add(j, deliveryAction);
 						A_tmp.computeCost();
 						
 						
-						//As before, we only add if it is better and verifies the constraints
-						if(A_tmp.verifyConstraints() && A_tmp.cost < A.cost){
+						// We only keep the plan if it satisfies the constraints and is better than the current solution
+						if (A_tmp.verifyConstraints() && A_tmp.cost < A.cost) {
 							solutions.add(A_tmp);
 						}
 					
 					}
+					
 				}
+				
 			}
+			
 		}
+		
 		return solutions;
+		
 	}
 	
 	
-	//We exchange the order of two given tasks
+	/*
+	 * We exchange the order of two given tasks
+	 */
 	public List<Solution> changingTaskOrder(Solution A, Vehicle vi) {
 		
 		List<Solution> solutions = new ArrayList<Solution>();
@@ -202,6 +219,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 		for (Action a1 : A.actionsList.get(vi)) {
 			for (Action a2 : A.actionsList.get(vi)) {
 				if (!a1.equals(a2)) {
+					
 					Solution A_tmp = new Solution(A);
 					int indexT1 = A_tmp.actionsList.get(vi).indexOf(a1);
 					int indexT2 = A_tmp.actionsList.get(vi).indexOf(a2);
@@ -210,7 +228,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 					A_tmp.actionsList.get(vi).remove(a2);
 					
 					// We have to insert the smallest index first, otherwise there are some out-of-bound issues.
-					if(indexT1 < indexT2){
+					if (indexT1 < indexT2) {
 						A_tmp.actionsList.get(vi).add(indexT1, a2);
 						A_tmp.actionsList.get(vi).add(indexT2, a1);
 					} else {
@@ -220,7 +238,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 					
 					A_tmp.computeCost();
 					
-					//We only keep it if it is better than the current solution and if it satisfies the constraints
+					// We only keep the plan if it satisfies the constraints and is better than the current solution
 					if (A_tmp.verifyConstraints() && A_tmp.cost < A.cost) {
 						solutions.add(A_tmp);
 					}
@@ -228,6 +246,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 				}
 			}
 		}
+		
 		return solutions;
 
 	}
@@ -236,14 +255,12 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 class Solution {
 
-	//Used to store the actions of each vehicle
-	protected HashMap<Vehicle, List<Action>> actionsList;
+	protected HashMap<Vehicle, List<Action>> actionsList; // Used to store the actions of each vehicle
 	protected Double cost;
 
 	public static List<Vehicle> vehicles;
 	public static TaskSet tasks;
 	
-
 	public Solution() {
 		actionsList = new HashMap<Vehicle, List<Action>>();
 		for (Vehicle vehicle : vehicles) {
@@ -259,7 +276,9 @@ class Solution {
 		computeCost();
 	}
 
-	//Genereate the Plan for each vehicle for this solution
+	/*
+	 * Generate the plan for each vehicle for this solution
+	 */
 	public List<Plan> getPlan() {
 
 		List<Plan> plans = new ArrayList<Plan>();
@@ -270,7 +289,7 @@ class Solution {
 			City current = vehicle.homeCity();
 			Plan plan = new Plan(current);
 			
-			for (Action action: actions){
+			for (Action action: actions) {
 				
 				for (City city : current.pathTo(action.city)) {
 					plan.appendMove(city);
@@ -281,7 +300,7 @@ class Solution {
 				} else if (action.actionType.equals("delivery")) {
 					plan.appendDelivery(action.task);
 				} else {
-					System.err.println("Error in getPlan(): some action is neither pickup nor delivery.");
+					System.err.println("[Error] getPlan(): some action is neither a pickup nor a delivery action.");
 				}
 				
 				current = action.city;
@@ -313,7 +332,7 @@ class Solution {
 	}
 
 	/**
-	 * Verify constraints.
+	 * Verify the constraints.
 	 * @return true if the constraints are fulfilled, false otherwise.
 	 */
 	 Boolean verifyConstraints() {
@@ -335,7 +354,6 @@ class Solution {
 				}
 	
 				if (carriedWeight > vehicle.capacity()) {
-					//System.out.println("[Info] Constraint 7 not met.");
 					return false;
 				}
 				
@@ -348,7 +366,6 @@ class Solution {
 		 * Constraint 2
 		 * Pickups actions of a task must be before corresponding deliveries, all picked up tasks must be delivered and all tasks available must be picked up.
 		 */
-		
 		TaskSet availableTasks = TaskSet.copyOf(tasks);
 		
 		for (Vehicle vehicle : vehicles) {
@@ -362,20 +379,21 @@ class Solution {
 				if (action.actionType.equals("pickup")) {
 					stack.add(action.task);
 					availableTasks.remove(action.task);
+				} else if (action.actionType.equals("delivery")) {
+					if (!stack.remove(action.task)) return false;
 				} else {
-					if (!stack.remove(action.task)) {
-						//System.out.println("[Info] Constraint 8 " + debug + " - " + action.task + " not met.");
-						return false;
-					}
+					System.err.println("[Error] verifyConstraints(): some action is neither a pickup nor a delivery action.");
 				}
 				
 			}
-			//All picked up tasks must be delivered
+			
+			// All picked up tasks must be delivered
 			if (!stack.isEmpty()) return false;
 			
 		}
 		
-		if(!availableTasks.isEmpty()){
+		// Verify that there is no task left
+		if (!availableTasks.isEmpty()) {
 			return false;
 		}
 
@@ -384,13 +402,13 @@ class Solution {
 	 
 	@Override
 	public String toString() {
-		String s = "";
+		String string = "";
 		
-		for (Vehicle v: vehicles){
-			s = s + " \n "+ actionsList.get(v);
+		for (Vehicle vehicle : vehicles){
+			string = string + "\n" + actionsList.get(vehicle);
 		}
 		
-		return s;
+		return string;
 	}
 	 
 }
@@ -406,8 +424,10 @@ class Action {
 		actionType = type;
 		if (actionType.equals("pickup")) {
 			city = this.task.pickupCity;
-		} else {
+		} else if (actionType.equals("delivery")) {
 			city = this.task.deliveryCity;
+		} else {
+			System.err.println("[Error] Attempt to create an action that is not a pickup nor a delivery action.");
 		}
 	}
 	

@@ -156,7 +156,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 		Vehicle vi = null;
 		//System.out.println("141");
 		
-		while (vi == null || Aold.nextTaskVehicle[vi.id()] == null) {
+		while (vi == null || Aold.actionsList.get(vi).isEmpty()) {
 			vi = vehicles.get((int) (Math.random() * vehicles.size()));
 		}
 
@@ -171,6 +171,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 					List<Solution> A = changingVehicle(Aold, vi, vj);
 					
 					for(Solution solution: A){
+						System.out.println(solution);
 						if (solution.verifyConstraints()) {
 							N.add(solution);
 						}
@@ -293,7 +294,7 @@ public class CentralizedAgent implements CentralizedBehavior {
 		
 		
 		//We can put it until the end of the array
-		for (int i = 1; i < A1.actionsList.size(); i++) {
+		for (int i = 1; i < A1.actionsList.get(v2).size(); i++) {
 			Solution A_tmp = new Solution(A1, A1.debug+"-taskfree-multi");
 			A_tmp.actionsList.get(v2).add(i, deliveryAction);
 			A_tmp.cost = A_tmp.computeCost();
@@ -370,8 +371,15 @@ public class CentralizedAgent implements CentralizedBehavior {
 		
 		A1.actionsList.get(vi).remove(a1);
 		A1.actionsList.get(vi).remove(a2);
-		A1.actionsList.get(vi).add(indexT1, a1);
-		A1.actionsList.get(vi).add(indexT2, a2);
+		
+		if(indexT1 < indexT2){
+			A1.actionsList.get(vi).add(indexT1, a2);
+			A1.actionsList.get(vi).add(indexT2, a1);
+		} else {
+			A1.actionsList.get(vi).add(indexT2, a1);
+			A1.actionsList.get(vi).add(indexT1, a2);
+		}
+		
 		/*
 		A1.actionsList[vi.id()].remove(a1);
 		A1.actionsList[vi.id()].remove(a2);
@@ -444,12 +452,12 @@ class Solution {
 
 	// TODO: privatiser/publiquiser toutes les variables une fois que le reste fonctionne.
 	//HashMap<Task, Task> nextTaskTask;
-	Task[] nextTaskTask;
+	//Task[] nextTaskTask;
 	//HashMap<Vehicle, Task> nextTaskVehicle;
-	Task[] nextTaskVehicle;
+	//Task[] nextTaskVehicle;
 	//HashMap<Task, Integer> time;
 	//HashMap<Task, Vehicle> vehicleTaskMap;
-	Vehicle[] vehicleTaskMap;
+	//Vehicle[] vehicleTaskMap;
 	HashMap<Vehicle, List<Action>> actionsList;
 //	ArrayList[] actionsList;
 
@@ -460,10 +468,10 @@ class Solution {
 	static List<Vehicle> vehicles;
 
 	public Solution(TaskSet tasks, List<Vehicle> vehicles) {
-		nextTaskTask = new Task[tasks.size()];//new HashMap<Task, Task>();
-		nextTaskVehicle = new Task[vehicles.size()];//new HashMap<Vehicle, Task>();
+		//nextTaskTask = new Task[tasks.size()];//new HashMap<Task, Task>();
+		//nextTaskVehicle = new Task[vehicles.size()];//new HashMap<Vehicle, Task>();
 		//time = new HashMap<Task, Integer>();
-		vehicleTaskMap = new Vehicle[tasks.size()];//new HashMap<Task, Vehicle>();
+		//vehicleTaskMap = new Vehicle[tasks.size()];//new HashMap<Task, Vehicle>();
 		//TODO
 		actionsList = new HashMap<Vehicle, List<Action>>();
 		for(Vehicle v: vehicles){
@@ -474,10 +482,10 @@ class Solution {
 	}
 
 	public Solution(Solution parentSolution, String debug) {
-		nextTaskTask = parentSolution.nextTaskTask.clone();//new HashMap<Task, Task>(parentSolution.nextTaskTask);
-		nextTaskVehicle = parentSolution.nextTaskVehicle.clone();//new HashMap<Vehicle, Task>(parentSolution.nextTaskVehicle);
+		//nextTaskTask = parentSolution.nextTaskTask.clone();//new HashMap<Task, Task>(parentSolution.nextTaskTask);
+		//nextTaskVehicle = parentSolution.nextTaskVehicle.clone();//new HashMap<Vehicle, Task>(parentSolution.nextTaskVehicle);
 		//time = new HashMap<Task, Integer>(parentSolution.time);
-		vehicleTaskMap = parentSolution.vehicleTaskMap.clone() ; //new HashMap<Task, Vehicle>(parentSolution.vehicleTaskMap);
+		//vehicleTaskMap = parentSolution.vehicleTaskMap.clone() ; //new HashMap<Task, Vehicle>(parentSolution.vehicleTaskMap);
 		actionsList = new HashMap<Vehicle, List<Action>>();
 		for(Vehicle v: vehicles){
 			actionsList.put(v, new ArrayList<Action>(parentSolution.actionsList.get(v)));
@@ -558,14 +566,14 @@ class Solution {
 		/*
 		 * Constraint 1
 		 * nextT ask(t) ̸= t: the task delivered after some task t cannot be the same task;
-		 */
+		 
 		for (Task currentTask: tasks) {
 			Task nextTask = nextTaskTask[currentTask.id];
 			if (currentTask != null && currentTask.equals(nextTask)) {
 				System.out.println("Constraint1");
 				return false;
 			}
-		}
+		}*/
 
 		/*
 		 * Constraint 2
@@ -595,26 +603,26 @@ class Solution {
 		/*
 		 * Constraint 4
 		 * nextTask(vk) = tj ��� vehicle(tj) = vk: already explained
-		 */
+		 
 		for (Vehicle vk : vehicles) {
 			Task tj = nextTaskVehicle[vk.id()];
 			if (tj!= null && !vk.equals(vehicleTaskMap[tj.id])) {
 				System.out.println("Constraint4 "+this.debug);
 				return false;
 			}
-		}
+		}*/
 
 		/*
 		 * Constraint 5
 		 * nextTask(ti) = tj ⇒ vehicle(tj) = vehicle(ti)
-		 */
+		 *
 		for (Task ti : tasks) {
 			Task tj = nextTaskTask[ti.id];
 			if (tj != null && !vehicleTaskMap[tj.id].equals(vehicleTaskMap[ti.id])) {
 				System.out.println("Constraint5");
 				return false;
 			}
-		}
+		}*/
 
 		/*
 		 * Constraint 6
@@ -622,7 +630,7 @@ class Solution {
 		 * all tasks must be delivered: the set of values of the variables
 		 * in the nextTask array must be equal to the set of tasks T plus
 		 * NV times the value NULL
-		 */
+		 
 		
 		// return false if taskCounter + nullCounter ��� |nextTask| + NV
 		int nullCounter = 0;
@@ -638,7 +646,7 @@ class Solution {
 				}
 			}
 			nullCounter++;
-		}
+		}*/
 		
 		
 		/*
@@ -663,12 +671,12 @@ class Solution {
 			} else {
 				taskCounter++;
 			}
-		}*/
+		}
 		
 		if (!verifTasks.isEmpty() || nullCounter != vehicles.size()) {
 			System.out.println("Constraint6 "+verifTasks.size()+"/"+tasks.size()+" - "+nullCounter+"/"+vehicles.size());
 			return false;
-		}
+		}*/
 
 		/*
 		 * Constraint 7 //TODO gérer le poids
@@ -722,6 +730,8 @@ class Solution {
 					}
 				}
 			}
+			
+			//TODO Verify all task are delivered
 			
 		}
 

@@ -30,10 +30,10 @@ public class CentralizedAgent implements CentralizedBehavior {
 
 	@Override
 	public List<Plan> plan(List<Vehicle> vehicles, TaskSet tasks) {
-		return centralizedPlan(vehicles, tasks);
+		return centralizedPlan(vehicles, tasks, 0.8);
 	}
 
-	private List<Plan> centralizedPlan(List<Vehicle> vehicles, TaskSet tasks) {
+	private List<Plan> centralizedPlan(List<Vehicle> vehicles, TaskSet tasks, double p) {
 
 		Solution.vehicles = vehicles;
 		Solution.tasks = tasks;
@@ -62,7 +62,11 @@ public class CentralizedAgent implements CentralizedBehavior {
 			N.add(Aold);
 			
 			//Select the best solution among the neighbours (and the current solution)
+			if(Math.random() < p){
 			A = localChoice(N);
+			} else {
+				A = N.get((int) Math.random()*N.size());
+			}
 			
 			System.out.println("[Info] Iter " + count + " : " + A.cost);
 			count++;

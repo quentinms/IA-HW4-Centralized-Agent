@@ -58,14 +58,15 @@ public class CentralizedAgent implements CentralizedBehavior {
 			
 			N = chooseNeighbours(Aold, tasks, vehicles);
 			
-			//We also add the old state in order to prevent NullPointerExceptions if no neighbour is better
+			// We also add the old state in order to prevent NullPointerExceptions if no neighbour is better
 			N.add(Aold);
 			
-			//Select the best solution among the neighbours (and the current solution)
-			if(Math.random() < p){
-			A = localChoice(N);
+			// With a probability p, select one random solution (avoids get stuck in local optimum).
+			if (Math.random() < p) {
+				// Select the best solution among the neighbours (and the current solution)
+				A = localChoice(N);
 			} else {
-				A = N.get((int) Math.random()*N.size());
+				A = N.get((int) Math.random() * N.size());
 			}
 			
 			System.out.println("[Info] Iter " + count + " : " + A.cost);
